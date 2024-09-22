@@ -107,16 +107,34 @@ async function updateFileList() {
     infoDiv.appendChild(sizeSpan);
 
     li.appendChild(infoDiv);
+
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.innerHTML = '&times;';
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeFile(file.path);
+    });
+    li.appendChild(deleteBtn);
+
     fileListContainer.appendChild(li);
 
     // Add drag and drop event listeners
     li.addEventListener('dragstart', dragStart);
     li.addEventListener('dragover', dragOver);
+    li.addEventListener('dragleave', dragLeave);
     li.addEventListener('drop', drop);
 
     // Add click event listener for highlighting
     li.addEventListener('click', () => toggleHighlight(file.path));
   }
+}
+
+function removeFile(path) {
+  imageFiles = imageFiles.filter(file => file.path !== path);
+  updateFileList();
+  updateAtlas();
 }
 
 function toggleHighlight(path) {
@@ -200,46 +218,66 @@ function updatePreview(dataUrl) {
 }
 
 // Drag and drop functions
+let draggedItem = null;
+
 function dragStart(e) {
   if (sortingMethodSelect.value !== 'custom') return;
-  e.dataTransfer.setData('text/plain', e.target.dataset.path);
-  e.target.style.opacity = '0.5';
+  draggedItem = e.target.closest('li');
+  e.dataTransfer.setData('text/plain', draggedItem.dataset.path);
+  setTimeout(() => {
+    draggedItem.classList.add('dragging');
+  }, 0);
 }
 
 function dragOver(e) {
   if (sortingMethodSelect.value !== 'custom') return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+  const currentItem = e.target.closest('li');
+  if (currentItem && currentItem !== draggedItem) {
+    const rect = currentItem.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < rect.height / 2) {
+      currentItem.classList.remove('drag-over-bottom');
+      currentItem.classList.add('drag-over-top');
+    } else {
+      currentItem.classList.remove('drag-over-top');
+      currentItem.classList.add('drag-over-bottom');
+    }
+  }
+}
+
+function dragLeave(e) {
+  if (sortingMethodSelect.value !== 'custom') return;
+  const currentItem = e.target.closest('li');
+  if (currentItem) {
+    currentItem.classList.remove('drag-over-top', 'drag-over-bottom');
+  }
 }
 
 function drop(e) {
   if (sortingMethodSelect.value !== 'custom') return;
   e.preventDefault();
-  const draggedPath = e.dataTransfer.getData('text');
-  const draggedElement = document.querySelector(`[data-path="${draggedPath}"]`);
   const dropTarget = e.target.closest('li');
-
-  if (draggedElement && dropTarget && draggedElement !== dropTarget) {
-    const draggedIndex = Array.from(fileListContainer.children).indexOf(draggedElement);
-    const dropIndex = Array.from(fileListContainer.children).indexOf(dropTarget);
-
-    if (draggedIndex < dropIndex) {
-      fileListContainer.insertBefore(draggedElement, dropTarget.nextSibling);
+  if (dropTarget && draggedItem) {
+    const rect = dropTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < rect.height / 2) {
+      dropTarget.parentNode.insertBefore(draggedItem, dropTarget);
     } else {
-      fileListContainer.insertBefore(draggedElement, dropTarget);
+      dropTarget.parentNode.insertBefore(draggedItem, dropTarget.nextSibling);
     }
-
     // Update imageFiles array to match new order
     const newImageFiles = Array.from(fileListContainer.children).map(li => 
       imageFiles.find(file => file.path === li.dataset.path)
     );
     imageFiles = newImageFiles;
-
-    // Update atlas
     updateAtlas();
   }
-
-  draggedElement.style.opacity = '1';
+  // Reset styles
+  Array.from(fileListContainer.children).forEach(item => {
+    item.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  });
+  draggedItem = null;
 }
 
 // Function to update the atlas
