@@ -16,6 +16,7 @@ let packedAtlasDataUrl = null;
 let zoomLevel = 1;
 const zoomStep = 0.1;
 let isCustomSorting = false;
+let packedRects = []; // Added this line to declare packedRects
 
 // Event listener for selecting a folder
 selectFolderBtn.addEventListener('click', async () => {
@@ -48,12 +49,14 @@ toggleThemeBtn.addEventListener('click', async () => {
   applyTheme(isDark);
 });
 
-// Function to update the file list
+let highlightedItem = null;
+
 async function updateFileList() {
   const sortingMethod = sortingMethodSelect.value;
-  const [method, order] = sortingMethod.split('-');
   
-  if (!isCustomSorting) {
+  if (sortingMethod !== 'custom') {
+    const [method, order] = sortingMethod.split('-');
+    
     // Sort imageFiles based on the selected method
     imageFiles.sort((a, b) => {
       let comparison;
@@ -110,21 +113,107 @@ async function updateFileList() {
     li.addEventListener('dragstart', dragStart);
     li.addEventListener('dragover', dragOver);
     li.addEventListener('drop', drop);
+
+    // Add click event listener for highlighting
+    li.addEventListener('click', () => toggleHighlight(file.path));
   }
+}
+
+function toggleHighlight(path) {
+  if (highlightedItem === path) {
+    highlightedItem = null;
+    updatePreviewHighlight();
+  } else {
+    highlightedItem = path;
+    updatePreviewHighlight();
+  }
+}
+
+function updatePreviewHighlight() {
+  if (!packedAtlasDataUrl) return;
+
+  const img = new Image();
+  img.onload = () => {
+    const scaledSize = Math.ceil(BASE_SIZE * atlasZoom);
+    
+    previewCanvas.width = scaledSize;
+    previewCanvas.height = scaledSize;
+    
+    ctx.clearRect(0, 0, scaledSize, scaledSize);
+    
+    // Draw checkerboard background
+    const tileSize = Math.max(1, Math.ceil(10 * atlasZoom));
+    for (let x = 0; x < scaledSize; x += tileSize) {
+      for (let y = 0; y < scaledSize; y += tileSize) {
+        ctx.fillStyle = (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0 ? '#FFF' : '#DDD';
+        ctx.fillRect(x, y, tileSize, tileSize);
+      }
+    }
+    
+    // Draw the atlas image
+    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, scaledSize, scaledSize);
+
+    // Apply highlight effect
+    if (highlightedItem) {
+      const highlightedRect = packedRects.find(rect => rect.data.path === highlightedItem);
+      if (highlightedRect) {
+        const { x, y, width, height } = highlightedRect;
+        const scaleFactor = scaledSize / BASE_SIZE;
+        const scaledX = x * scaleFactor;
+        const scaledY = y * scaleFactor;
+        const scaledWidth = width * scaleFactor;
+        const scaledHeight = height * scaleFactor;
+
+        // Create a path for the entire canvas except the highlighted item
+        ctx.beginPath();
+        ctx.rect(0, 0, scaledSize, scaledSize);
+        ctx.rect(scaledX, scaledY, scaledWidth, scaledHeight);
+        ctx.closePath();
+
+        // Set the composite operation to "source-over" to draw over the existing content
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Fill the path with a semi-transparent black color
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fill('evenodd');
+
+        // Reset the composite operation
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Draw a border around the highlighted item
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+      }
+    }
+
+    updateCanvasContainerSize();
+    applyCanvasOffset();
+  };
+  img.src = packedAtlasDataUrl;
+}
+
+// Modify the updatePreview function to use updatePreviewHighlight
+function updatePreview(dataUrl) {
+  packedAtlasDataUrl = dataUrl;
+  updatePreviewHighlight();
 }
 
 // Drag and drop functions
 function dragStart(e) {
+  if (sortingMethodSelect.value !== 'custom') return;
   e.dataTransfer.setData('text/plain', e.target.dataset.path);
   e.target.style.opacity = '0.5';
 }
 
 function dragOver(e) {
+  if (sortingMethodSelect.value !== 'custom') return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
 }
 
 function drop(e) {
+  if (sortingMethodSelect.value !== 'custom') return;
   e.preventDefault();
   const draggedPath = e.dataTransfer.getData('text');
   const draggedElement = document.querySelector(`[data-path="${draggedPath}"]`);
@@ -176,6 +265,7 @@ async function updateAtlas() {
       throw new Error('No images were packed into the atlas');
     }
     
+    packedRects = result.packedRects; // Store the packed rectangles
     packedAtlasDataUrl = await renderAtlas(result.packedRects, result.images, atlasSize);
     console.log('Atlas rendered');
     updatePreview(packedAtlasDataUrl);
