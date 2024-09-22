@@ -1,0 +1,19 @@
+{
+  "name": "sprite-packer",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "electron": "^32.1.2"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "sharp": "^0.33.5"
+  }
+}

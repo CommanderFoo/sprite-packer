@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texture Atlas Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <!-- Add canvas-confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div id="toolbar">
+        <button id="selectFolderBtn" class="btn"><i class="fas fa-folder-open"></i> Select Folder</button>
+        <select id="atlasSizeSelect" class="select">
+            <option value="256">256x256</option>
+            <option value="512">512x512</option>
+            <option value="1024" selected>1024x1024</option>
+            <option value="2048">2048x2048</option>
+            <option value="4096">4096x4096</option>
+        </select>
+        <select id="paddingSelect" class="select">
+            <option value="0" selected>0px</option>
+            <option value="1">1px</option>
+            <option value="2">2px</option>
+            <option value="4">4px</option>
+            <option value="8">8px</option>
+        </select>
+        <select id="sortingMethodSelect" class="select">
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="fileSize-desc">File Size (Largest First)</option>
+            <option value="fileSize-asc">File Size (Smallest First)</option>
+            <option value="created-desc">Date Created (Newest First)</option>
+            <option value="created-asc">Date Created (Oldest First)</option>
+            <option value="updated-desc">Date Updated (Newest First)</option>
+            <option value="updated-asc">Date Updated (Oldest First)</option>
+            <option value="custom">Custom (Drag & Drop)</option>
+        </select>
+        <button id="saveAtlasBtn" class="btn" disabled><i class="fas fa-save"></i> Save Atlas</button>
+        <button id="toggleThemeBtn" class="btn"><i class="fas fa-adjust"></i> Toggle Theme</button>
+        <!-- Zoom controls removed -->
+    </div>
+    <div id="main-content">
+        <div id="file-list">
+            <ul id="fileListContainer"></ul>
+        </div>
+        <div id="preview">
+            <div id="canvasContainer">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+</html>

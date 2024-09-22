@@ -1,0 +1,363 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+#toolbar {
+    background-color: #ffffff;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn {
+    margin-right: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #45a049;
+}
+
+.btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.select {
+    margin-right: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.zoom-controls .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+#zoomLevel {
+    margin: 0 10px;
+    font-size: 14px;
+}
+
+#main-content {
+    display: flex;
+    height: calc(100vh - 90px); /* Subtract menu bar and toolbar height */
+}
+
+#file-list {
+    width: 250px;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+#preview {
+    flex-grow: 1;
+    padding: 20px;
+    overflow: auto; /* Change from 'hidden' to 'auto' */
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Change from 'center' to 'flex-start' */
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 500;
+}
+
+#fileListContainer {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+}
+
+#fileListContainer li {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+}
+
+#fileListContainer li:hover {
+    background-color: #f0f0f0;
+}
+
+#fileListContainer img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-right: 10px;
+}
+
+.file-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-name {
+    font-weight: bold;
+}
+
+.file-ext {
+    color: #666;
+}
+
+.file-size {
+    font-size: 0.8em;
+    color: #888;
+}
+
+body.dark-mode #fileListContainer li {
+    border-bottom-color: #3d3d3d;
+}
+
+body.dark-mode #fileListContainer li:hover {
+    background-color: #3d3d3d;
+}
+
+body.dark-mode .file-ext {
+    color: #aaa;
+}
+
+body.dark-mode .file-size {
+    color: #888;
+}
+
+#canvasContainer {
+    position: relative;
+    overflow: hidden; /* Change from 'auto' to 'hidden' */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: grab;
+    margin-top: 20px;
+}
+
+#canvasContainer:active {
+    cursor: grabbing;
+}
+
+#previewCanvas {
+    image-rendering: pixelated;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Dark mode styles */
+body.dark-mode {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.dark-mode #toolbar {
+    background-color: #2d2d2d;
+    border-bottom-color: #3d3d3d;
+}
+
+body.dark-mode .btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+body.dark-mode .btn:hover {
+    background-color: #45a049;
+}
+
+body.dark-mode .select {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-color: #3d3d3d;
+}
+
+body.dark-mode #file-list,
+body.dark-mode #preview {
+    background-color: #2d2d2d;
+}
+
+body.dark-mode #fileListContainer li {
+    border-color: #3d3d3d;
+}
+
+body.dark-mode #canvasContainer {
+    border-color: #3d3d3d;
+    background-color: #1e1e1e;
+}
+
+/* Add these styles for better text readability */
+body, select, button {
+    color: #333;
+}
+
+body.dark-mode, 
+body.dark-mode select, 
+body.dark-mode button {
+    color: #f0f0f0;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: #555;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Add these new styles */
+#menu-bar {
+    background-color: #f0f0f0;
+    padding: 5px;
+    display: flex;
+}
+
+.menu-item {
+    position: relative;
+    margin-right: 10px;
+}
+
+.menu-item span {
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.menu-item:hover .menu-content {
+    display: block;
+}
+
+.menu-content button, .menu-content select {
+    width: 100%;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+#file-list-controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#fileSizeSlider {
+    width: 100px;
+    margin-right: 10px;
+}
+
+/* Add dark mode styles for new elements */
+body.dark-mode #menu-bar {
+    background-color: #2d2d2d;
+    color: #f0f0f0;
+}
+
+body.dark-mode .menu-content {
+    background-color: #3d3d3d;
+    color: #f0f0f0;
+}
+
+body.dark-mode .menu-content button, 
+body.dark-mode .menu-content select {
+    background-color: #3d3d3d;
+    color: #f0f0f0;
+}
+
+/* Add these styles for the recent folders list */
+#recentFoldersContainer {
+    margin-bottom: 20px;
+}
+
+#recentFoldersContainer h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+#recentFoldersList {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#recentFoldersList li {
+    font-size: 12px;
+    padding: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#recentFoldersList li:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode #recentFoldersList li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Adjust the file list to accommodate the recent folders */
+#file-list {
+    display: flex;
+    flex-direction: column;
+}
+
+#fileListContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+}
