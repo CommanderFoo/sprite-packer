@@ -24,16 +24,20 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       // Add this line to set a Content Security Policy
-      contentSecurityPolicy: "default-src 'self'; script-src 'self'",
+      contentSecurityPolicy: "default-src 'self'; script-src 'self'"
     },
   });
 
+  mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile('index.html');
 
   // Set the theme based on the stored value or system preference
   const isDarkMode = store.get('darkMode', nativeTheme.shouldUseDarkColors);
   nativeTheme.themeSource = isDarkMode ? 'dark' : 'light';
 }
+
+// Set the app name
+app.name = 'Sprite Packer';
 
 app.whenReady().then(async () => {
   await initializeStore();
