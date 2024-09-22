@@ -551,7 +551,7 @@ saveAtlasBtn.addEventListener('click', async () => {
       const defaultPath = 'texture_atlas.png';
       const savedPath = await window.electronAPI.saveAtlas({ dataUrl: packedAtlasDataUrl, defaultPath });
       if (savedPath) {
-        alert(`Atlas saved successfully to: ${savedPath}`);
+        console.log(`Atlas saved successfully to: ${savedPath}`);
       }
     } catch (error) {
       console.error('Error saving atlas:', error);
@@ -575,7 +575,7 @@ async function saveProject() {
   try {
     const savedPath = await window.electronAPI.saveProject(projectData);
     if (savedPath) {
-      alert(`Project saved successfully to: ${savedPath}`);
+      console.log(`Project saved successfully to: ${savedPath}`);
     }
   } catch (error) {
     console.error('Error saving project:', error);
