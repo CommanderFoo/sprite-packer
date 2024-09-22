@@ -14,4 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getImagePreview: (filePath) => ipcRenderer.invoke('get-image-preview', filePath),
   setAtlasZoom: (zoomFactor) => ipcRenderer.invoke('set-atlas-zoom', zoomFactor),
   getAtlasZoom: () => ipcRenderer.invoke('get-atlas-zoom'),
+  saveProject: (projectData) => ipcRenderer.invoke('save-project', projectData),
+  loadProject: () => ipcRenderer.invoke('load-project'),
 });
