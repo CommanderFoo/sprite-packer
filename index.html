@@ -12,37 +12,43 @@
 </head>
 <body>
     <div id="toolbar">
-        <button id="selectFolderBtn" class="btn"><i class="fas fa-folder-open"></i> Select Folder</button>
-        <select id="atlasSizeSelect" class="select">
-            <option value="256">256x256</option>
-            <option value="512">512x512</option>
-            <option value="1024" selected>1024x1024</option>
-            <option value="2048">2048x2048</option>
-            <option value="4096">4096x4096</option>
-        </select>
-        <select id="paddingSelect" class="select">
-            <option value="0" selected>0px</option>
-            <option value="1">1px</option>
-            <option value="2">2px</option>
-            <option value="4">4px</option>
-            <option value="8">8px</option>
-        </select>
-        <select id="sortingMethodSelect" class="select">
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="fileSize-desc">File Size (Largest First)</option>
-            <option value="fileSize-asc">File Size (Smallest First)</option>
-            <option value="created-desc">Date Created (Newest First)</option>
-            <option value="created-asc">Date Created (Oldest First)</option>
-            <option value="updated-desc">Date Updated (Newest First)</option>
-            <option value="updated-asc">Date Updated (Oldest First)</option>
-            <option value="custom">Custom (Drag & Drop)</option>
-        </select>
-        <button id="saveAtlasBtn" class="btn" disabled><i class="fas fa-save"></i> Save Atlas</button>
-        <button id="toggleThemeBtn" class="btn"><i class="fas fa-adjust"></i> Toggle Theme</button>
-        <button id="saveProjectBtn" class="btn"><i class="fas fa-save"></i> Save Project</button>
-        <button id="loadProjectBtn" class="btn"><i class="fas fa-folder-open"></i> Load Project</button>
-        <!-- Zoom controls removed -->
+        <div class="toolbar-left">
+            <button id="selectFolderBtn" class="btn"><i class="fas fa-folder-open"></i> Select Folder</button>
+            <select id="atlasSizeSelect" class="select">
+                <option value="256">256x256</option>
+                <option value="512">512x512</option>
+                <option value="1024" selected>1024x1024</option>
+                <option value="2048">2048x2048</option>
+                <option value="4096">4096x4096</option>
+            </select>
+            <select id="paddingSelect" class="select">
+                <option value="0" selected>0px</option>
+                <option value="1">1px</option>
+                <option value="2">2px</option>
+                <option value="4">4px</option>
+                <option value="8">8px</option>
+            </select>
+            <select id="sortingMethodSelect" class="select">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="fileSize-desc">File Size (Largest First)</option>
+                <option value="fileSize-asc">File Size (Smallest First)</option>
+                <option value="created-desc">Date Created (Newest First)</option>
+                <option value="created-asc">Date Created (Oldest First)</option>
+                <option value="updated-desc">Date Updated (Newest First)</option>
+                <option value="updated-asc">Date Updated (Oldest First)</option>
+                <option value="custom">Custom (Drag & Drop)</option>
+            </select>
+            <button id="saveAtlasBtn" class="btn" disabled><i class="fas fa-save"></i> Save Atlas</button>
+            <button id="toggleThemeBtn" class="btn"><i class="fas fa-adjust"></i> Toggle Theme</button>
+            <button id="saveProjectBtn" class="btn"><i class="fas fa-save"></i> Save Project</button>
+            <button id="loadProjectBtn" class="btn"><i class="fas fa-folder-open"></i> Load Project</button>
+        </div>
+        <div class="toolbar-right">
+            <button id="githubBtn" class="btn github-btn">
+                <i class="fab fa-github"></i> GitHub
+            </button>
+        </div>
     </div>
     <div id="main-content">
         <div id="file-list">
