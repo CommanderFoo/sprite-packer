@@ -134,20 +134,35 @@ h2 {
 }
 
 #fileListContainer li.dragging {
-    opacity: 0.5;
+    opacity: 0.6;
     background-color: #f0f0f0;
 }
 
-#fileListContainer li.drag-over {
-    border-top: 2px solid #4CAF50;
+#fileListContainer li.drag-over-top::before,
+#fileListContainer li.drag-over-bottom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #4CAF50;
+}
+
+#fileListContainer li.drag-over-top::before {
+    top: 0;
+}
+
+#fileListContainer li.drag-over-bottom::after {
+    bottom: 0;
 }
 
 body.dark-mode #fileListContainer li.dragging {
     background-color: #3d3d3d;
 }
 
-body.dark-mode #fileListContainer li.drag-over {
-    border-top-color: #45a049;
+body.dark-mode #fileListContainer li.drag-over-top::before,
+body.dark-mode #fileListContainer li.drag-over-bottom::after {
+    background-color: #45a049;
 }
 
 #fileListContainer img {
@@ -415,21 +430,15 @@ body.dark-mode #fileListContainer li.dragging {
     background-color: #3d3d3d;
 }
 
-#fileListContainer li.drag-over-top {
-    border-top: 2px solid #4CAF50;
-    padding-top: 3px; /* Reduce top padding to compensate for border */
-}
-
-#fileListContainer li.drag-over-bottom {
-    border-bottom: 2px solid #4CAF50;
-    padding-bottom: 3px; /* Reduce bottom padding to compensate for border */
+#fileListContainer li {
+    position: relative;
 }
 
 body.dark-mode #fileListContainer li.dragging {
     background-color: #3d3d3d;
 }
 
-body.dark-mode #fileListContainer li.drag-over-top,
-body.dark-mode #fileListContainer li.drag-over-bottom {
-    border-color: #45a049;
+body.dark-mode #fileListContainer li.drag-over-top::before,
+body.dark-mode #fileListContainer li.drag-over-bottom::after {
+    background-color: #45a049;
 }
