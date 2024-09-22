@@ -69,7 +69,7 @@ body {
 #file-list {
     width: 250px;
     background-color: #ffffff;
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0; /* Light mode divider */
     padding: 20px;
     overflow-y: auto;
 }
@@ -77,11 +77,11 @@ body {
 #preview {
     flex-grow: 1;
     padding: 20px;
-    overflow: auto; /* Change from 'hidden' to 'auto' */
+    overflow: auto;
     background-color: #f9f9f9;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Change from 'center' to 'flex-start' */
+    align-items: flex-start;
 }
 
 h2 {
@@ -196,6 +196,10 @@ body.dark-mode .select {
     background-color: #2d2d2d;
     color: #ffffff;
     border-color: #3d3d3d;
+}
+
+body.dark-mode #file-list {
+    border-right: 1px solid #424242; 
 }
 
 body.dark-mode #file-list,
