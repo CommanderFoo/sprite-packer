@@ -13,6 +13,16 @@ body {
     display: flex;
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    justify-content: space-between;
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.toolbar-right {
+    margin-left: auto;
 }
 
 .btn {
@@ -441,4 +451,23 @@ body.dark-mode #fileListContainer li.dragging {
 body.dark-mode #fileListContainer li.drag-over-top::before,
 body.dark-mode #fileListContainer li.drag-over-bottom::after {
     background-color: #45a049;
+}
+
+.github-btn {
+    background-color: #24292e;
+    color: white;
+}
+
+.github-btn:hover {
+    background-color: #2f363d;
+}
+
+/* Ensure this style is applied to all buttons in the toolbar */
+#toolbar .btn {
+    margin-right: 10px;
+}
+
+/* Remove margin from the last button to prevent extra space */
+#toolbar .btn:last-child {
+    margin-right: 0;
 }
