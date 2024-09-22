@@ -11,6 +11,7 @@ const canvasContainer = document.getElementById('canvasContainer');
 const saveAtlasBtn = document.getElementById('saveAtlasBtn');
 const saveProjectBtn = document.getElementById('saveProjectBtn');
 const loadProjectBtn = document.getElementById('loadProjectBtn');
+const githubBtn = document.getElementById('githubBtn');
 
 let selectedFolder = null;
 let imageFiles = [];
@@ -606,3 +607,7 @@ async function loadProject() {
 
 saveProjectBtn.addEventListener('click', saveProject);
 loadProjectBtn.addEventListener('click', loadProject);
+
+githubBtn.addEventListener('click', () => {
+    window.electronAPI.openExternal('https://github.com/CommanderFoo/sprite-packer');
+});
