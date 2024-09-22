@@ -67,7 +67,7 @@ body {
 }
 
 #file-list {
-    width: 250px;
+    width: 300px;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0; /* Light mode divider */
     padding: 20px;
@@ -104,10 +104,50 @@ h2 {
     padding: 5px 10px;
     border-bottom: 1px solid #e0e0e0;
     cursor: pointer;
+    position: relative;
 }
 
-#fileListContainer li:hover {
+#fileListContainer li:hover .delete-btn {
+    display: block;
+}
+
+.delete-btn {
+    display: none;
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.delete-btn:hover {
+    background-color: #ff1a1a;
+}
+
+#fileListContainer li.dragging {
+    opacity: 0.5;
     background-color: #f0f0f0;
+}
+
+#fileListContainer li.drag-over {
+    border-top: 2px solid #4CAF50;
+}
+
+body.dark-mode #fileListContainer li.dragging {
+    background-color: #3d3d3d;
+}
+
+body.dark-mode #fileListContainer li.drag-over {
+    border-top-color: #45a049;
 }
 
 #fileListContainer img {
@@ -364,4 +404,32 @@ body.dark-mode #recentFoldersList li:hover {
 #fileListContainer {
     flex-grow: 1;
     overflow-y: auto;
+}
+
+#fileListContainer li.dragging {
+    opacity: 0.5;
+    background-color: #f0f0f0;
+}
+
+body.dark-mode #fileListContainer li.dragging {
+    background-color: #3d3d3d;
+}
+
+#fileListContainer li.drag-over-top {
+    border-top: 2px solid #4CAF50;
+    padding-top: 3px; /* Reduce top padding to compensate for border */
+}
+
+#fileListContainer li.drag-over-bottom {
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 3px; /* Reduce bottom padding to compensate for border */
+}
+
+body.dark-mode #fileListContainer li.dragging {
+    background-color: #3d3d3d;
+}
+
+body.dark-mode #fileListContainer li.drag-over-top,
+body.dark-mode #fileListContainer li.drag-over-bottom {
+    border-color: #45a049;
 }
