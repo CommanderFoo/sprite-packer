@@ -199,6 +199,33 @@ app.whenReady().then(async () => {
   ipcMain.handle('get-atlas-zoom', () => {
     return store.get('atlasZoomFactor', 0.6); // Change default to 0.6 (60%)
   });
+
+  // Add these new IPC handlers
+  ipcMain.handle('save-project', async (event, projectData) => {
+    const result = await dialog.showSaveDialog({
+      title: 'Save Project',
+      defaultPath: 'texture_atlas_project.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+
+    if (!result.canceled) {
+      await fs.writeFile(result.filePath, JSON.stringify(projectData, null, 2));
+      return result.filePath;
+    }
+  });
+
+  ipcMain.handle('load-project', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Load Project',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile']
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const projectData = await fs.readFile(result.filePaths[0], 'utf-8');
+      return JSON.parse(projectData);
+    }
+  });
 });
 
 async function addRecentFolder(folder) {
