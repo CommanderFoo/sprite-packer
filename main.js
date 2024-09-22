@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, nativeTheme, webContents } = require('electron');
+﻿const { app, BrowserWindow, ipcMain, dialog, nativeTheme, webContents, shell } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp');
@@ -229,6 +229,10 @@ app.whenReady().then(async () => {
       const projectData = await fs.readFile(result.filePaths[0], 'utf-8');
       return JSON.parse(projectData);
     }
+  });
+
+  ipcMain.handle('open-external', (event, url) => {
+    shell.openExternal(url);
   });
 });
 
