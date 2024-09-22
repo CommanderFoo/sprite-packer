@@ -227,6 +227,12 @@ function dragStart(e) {
   setTimeout(() => {
     draggedItem.classList.add('dragging');
   }, 0);
+  
+  // Reset highlighting when dragging starts
+  if (highlightedItem) {
+    highlightedItem = null;
+    updatePreviewHighlight();
+  }
 }
 
 function dragOver(e) {
@@ -279,6 +285,28 @@ function drop(e) {
   });
   draggedItem = null;
 }
+
+// Update the CSS for the drag and drop effect
+const style = document.createElement('style');
+style.textContent = `
+  #fileListContainer li.drag-over-top::before,
+  #fileListContainer li.drag-over-bottom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #4CAF50;
+    pointer-events: none;
+  }
+  #fileListContainer li.drag-over-top::before {
+    top: -1px;
+  }
+  #fileListContainer li.drag-over-bottom::after {
+    bottom: -1px;
+  }
+`;
+document.head.appendChild(style);
 
 // Function to update the atlas
 async function updateAtlas() {
