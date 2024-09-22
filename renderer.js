@@ -9,6 +9,8 @@ const ctx = previewCanvas.getContext('2d');
 const canvasContainer = document.getElementById('canvasContainer');
 
 const saveAtlasBtn = document.getElementById('saveAtlasBtn');
+const saveProjectBtn = document.getElementById('saveProjectBtn');
+const loadProjectBtn = document.getElementById('loadProjectBtn');
 
 let selectedFolder = null;
 let imageFiles = [];
@@ -16,7 +18,7 @@ let packedAtlasDataUrl = null;
 let zoomLevel = 1;
 const zoomStep = 0.1;
 let isCustomSorting = false;
-let packedRects = []; // Added this line to declare packedRects
+let packedRects = [];
 
 // Event listener for selecting a folder
 selectFolderBtn.addEventListener('click', async () => {
@@ -559,3 +561,48 @@ saveAtlasBtn.addEventListener('click', async () => {
     alert('No atlas to save. Please generate an atlas first.');
   }
 });
+
+async function saveProject() {
+  const projectData = {
+    selectedFolder,
+    imageFiles,
+    atlasSize: atlasSizeSelect.value,
+    padding: paddingSelect.value,
+    sortingMethod: sortingMethodSelect.value,
+    atlasZoom,
+  };
+
+  try {
+    const savedPath = await window.electronAPI.saveProject(projectData);
+    if (savedPath) {
+      alert(`Project saved successfully to: ${savedPath}`);
+    }
+  } catch (error) {
+    console.error('Error saving project:', error);
+    alert('Error saving project: ' + error.message);
+  }
+}
+
+async function loadProject() {
+  try {
+    const projectData = await window.electronAPI.loadProject();
+    if (projectData) {
+      selectedFolder = projectData.selectedFolder;
+      imageFiles = projectData.imageFiles;
+      atlasSizeSelect.value = projectData.atlasSize;
+      paddingSelect.value = projectData.padding;
+      sortingMethodSelect.value = projectData.sortingMethod;
+      atlasZoom = projectData.atlasZoom;
+
+      await updateFileList();
+      updateAtlas();
+      updateAtlasZoom(atlasZoom);
+    }
+  } catch (error) {
+    console.error('Error loading project:', error);
+    alert('Error loading project: ' + error.message);
+  }
+}
+
+saveProjectBtn.addEventListener('click', saveProject);
+loadProjectBtn.addEventListener('click', loadProject);
