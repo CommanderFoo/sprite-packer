@@ -88,7 +88,7 @@ body {
 #preview {
     flex-grow: 1;
     padding: 20px;
-    overflow: auto;
+    overflow: hidden;
     background-color: #f9f9f9;
     display: flex;
     justify-content: center;
@@ -219,12 +219,13 @@ body.dark-mode .file-size {
 
 #canvasContainer {
     position: relative;
-    overflow: hidden; /* Change from 'auto' to 'hidden' */
+    overflow: hidden;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     background-color: #fff;
     cursor: grab;
-    margin-top: 20px;
+    width: 100%;
+    height: 100%;
 }
 
 #canvasContainer:active {
@@ -232,10 +233,10 @@ body.dark-mode .file-size {
 }
 
 #previewCanvas {
-    image-rendering: pixelated;
     position: absolute;
     top: 0;
     left: 0;
+    transform-origin: top left;
 }
 
 /* Dark mode styles */
@@ -265,7 +266,7 @@ body.dark-mode .select {
 }
 
 body.dark-mode #file-list {
-    border-right: 1px solid #424242; 
+    border-right: 1px solid #424242;
 }
 
 body.dark-mode #file-list,
@@ -287,8 +288,8 @@ body, select, button {
     color: #333;
 }
 
-body.dark-mode, 
-body.dark-mode select, 
+body.dark-mode,
+body.dark-mode select,
 body.dark-mode button {
     color: #f0f0f0;
 }
@@ -382,7 +383,7 @@ body.dark-mode .menu-content {
     color: #f0f0f0;
 }
 
-body.dark-mode .menu-content button, 
+body.dark-mode .menu-content button,
 body.dark-mode .menu-content select {
     background-color: #3d3d3d;
     color: #f0f0f0;
