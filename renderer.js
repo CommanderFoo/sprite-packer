@@ -6,6 +6,7 @@ const toggle_theme_btn = document.getElementById("toggleThemeBtn");
 const file_list_container = document.getElementById("fileListContainer");
 const preview_canvas = document.getElementById("previewCanvas");
 const ctx = preview_canvas.getContext("2d");
+const quality_select = document.getElementById("qualitySelect");
 const canvas_container = document.getElementById("canvasContainer");
 
 const save_atlas_btn = document.getElementById("saveAtlasBtn");
@@ -536,7 +537,7 @@ save_atlas_btn.addEventListener("click", async () => {
 	if (packed_atlas_data_url) {
 		try {
 			const default_path = "sprite_atlas.png";
-			const saved_path = await window.electronAPI.save_atlas({ data_url: packed_atlas_data_url, default_path });
+			const saved_path = await window.electronAPI.save_atlas({ data_url: packed_atlas_data_url, default_path, quality: quality_select.value });
 			if (saved_path) {
 
 			}
