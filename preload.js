@@ -1,20 +1,20 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  selectFolder: () => ipcRenderer.invoke('select-folder'),
-  loadImages: (folderPath) => ipcRenderer.invoke('load-images', folderPath),
-  packTexture: (options) => ipcRenderer.invoke('pack-texture', options),
-  saveAtlas: (options) => ipcRenderer.invoke('save-atlas', options),
-  readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
-  getRecentFolders: () => ipcRenderer.invoke('get-recent-folders'),
-  addRecentFolder: (folder) => ipcRenderer.invoke('add-recent-folder', folder),
-  toggleDarkMode: () => ipcRenderer.invoke('toggle-dark-mode'),
-  getTheme: () => ipcRenderer.invoke('get-theme'),
-  getFileStats: (filePath) => ipcRenderer.invoke('get-file-stats', filePath),
-  getImagePreview: (filePath) => ipcRenderer.invoke('get-image-preview', filePath),
-  setAtlasZoom: (zoomFactor) => ipcRenderer.invoke('set-atlas-zoom', zoomFactor),
-  getAtlasZoom: () => ipcRenderer.invoke('get-atlas-zoom'),
-  saveProject: (projectData) => ipcRenderer.invoke('save-project', projectData),
-  loadProject: () => ipcRenderer.invoke('load-project'),
-  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+contextBridge.exposeInMainWorld("electronAPI", {
+	select_folder: () => ipcRenderer.invoke("select-folder"),
+	load_images: (folderPath) => ipcRenderer.invoke("load-images", folderPath),
+	pack_texture: (options) => ipcRenderer.invoke("pack-texture", options),
+	save_atlas: (options) => ipcRenderer.invoke("save-atlas", options),
+	read_file: (filePath) => ipcRenderer.invoke("read-file", filePath),
+	get_recent_folders: () => ipcRenderer.invoke("get-recent-folders"),
+	add_recent_folder: (folder) => ipcRenderer.invoke("add-recent-folder", folder),
+	toggle_dark_mode: () => ipcRenderer.invoke("toggle-dark-mode"),
+	get_theme: () => ipcRenderer.invoke("get-theme"),
+	get_file_stats: (filePath) => ipcRenderer.invoke("get-file-stats", filePath),
+	get_image_preview: (filePath) => ipcRenderer.invoke("get-image-preview", filePath),
+	set_atlas_zoom: (zoomFactor) => ipcRenderer.invoke("set-atlas-zoom", zoomFactor),
+	get_atlas_zoom: () => ipcRenderer.invoke("get-atlas-zoom"),
+	save_project: (projectData) => ipcRenderer.invoke("save-project", projectData),
+	load_project: () => ipcRenderer.invoke("load-project"),
+	open_external: (url) => ipcRenderer.invoke("open-external", url),
 });
