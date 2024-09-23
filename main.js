@@ -137,14 +137,16 @@ app.whenReady().then(async () => {
 		}
 	});
 
-	ipcMain.handle("save-atlas", async (event, { data_url, default_path }) => {
+	ipcMain.handle("save-atlas", async (event, { data_url, default_path, quality }) => {
 		const result = await dialog.showSaveDialog({
 			default_path,
 			filters: [{ name: "PNG", extensions: ["png"] }]
 		});
 		if (!result.canceled) {
 			const base64_data = data_url.replace(/^data:image\/png;base64,/, "");
-			await fs.writeFile(result.filePath, base64_data, "base64");
+			const buffer = Buffer.from(base64_data, "base64");
+			const png_buffer = await sharp(buffer).png({ quality: Math.round(parseFloat(quality) * 100) }).toBuffer();
+			await fs.writeFile(result.filePath, png_buffer, "base64");
 			return result.filePath;
 		}
 	});
