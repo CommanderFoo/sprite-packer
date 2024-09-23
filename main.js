@@ -28,7 +28,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.setMenuBarVisibility(false);
+  //mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile('index.html');
 
   // Set the theme based on the stored value or system preference
@@ -38,6 +38,17 @@ function createWindow() {
 
 // Set the app name
 app.name = 'Sprite Packer';
+
+const compareStrings = (a, b) => {
+  const aChars = [...a];
+  const bChars = [...b];
+  for (let i = 0; i < Math.min(aChars.length, bChars.length); i++) {
+    if (aChars[i] !== bChars[i]) {
+      return aChars[i].localeCompare(bChars[i]);
+    }
+  }
+  return aChars.length - bChars.length;
+};
 
 app.whenReady().then(async () => {
   await initializeStore();
@@ -54,7 +65,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('load-images', async (event, folderPath) => {
     const files = await fs.readdir(folderPath);
     const imageFiles = files.filter(file => 
-      ['.png', '.jpg', '.jpeg', '.gif'].includes(path.extname(file).toLowerCase())
+      ['.png', '.jpg', '.jpeg'].includes(path.extname(file).toLowerCase())
     );
     const imagesWithStats = await Promise.all(imageFiles.map(async file => {
       const filePath = path.join(folderPath, file);
@@ -82,25 +93,14 @@ app.whenReady().then(async () => {
         return { path, buffer, stats, width: metadata.width, height: metadata.height };
       }));
 
-      // Sort images based on the selected method
-      images.sort((a, b) => {
-        switch (sortingMethod) {
-          case 'fileSize-asc':
-            return a.stats.size - b.stats.size;
-          case 'fileSize-desc':
-            return b.stats.size - a.stats.size;
-          case 'name-asc':
-            return a.path.localeCompare(b.path);
-          case 'name-desc':
-            return b.path.localeCompare(a.path);
-          case 'updated-asc':
-            return a.stats.mtime - b.stats.mtime;
-          case 'updated-desc':
-            return b.stats.mtime - a.stats.mtime;
-          default:
-            return 0;
-        }
-      });
+      // Ensure atlasSize is within the supported range
+      const maxSize = 8192; // New maximum size
+      if (atlasSize > maxSize) {
+        console.warn(`Atlas size ${atlasSize} is too large. Using maximum size of ${maxSize}.`);
+        atlasSize = maxSize;
+      }
+
+     
 
       // Custom packing algorithm
       const packedRects = [];
@@ -208,7 +208,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('save-project', async (event, projectData) => {
     const result = await dialog.showSaveDialog({
       title: 'Save Project',
-      defaultPath: 'texture_atlas_project.json',
+      defaultPath: 'sprite_packer_project.json',
       filters: [{ name: 'JSON', extensions: ['json'] }]
     });
 
