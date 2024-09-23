@@ -251,7 +251,6 @@ body.dark-mode #toolbar {
 }
 
 body.dark-mode .btn {
-    background-color: #4CAF50;
     color: white;
 }
 
@@ -461,7 +460,7 @@ body.dark-mode #fileListContainer li.drag-over-bottom::after {
 }
 
 .github-btn:hover {
-    background-color: #2f363d;
+    background-color: #2f363d !important;
 }
 
 /* Ensure this style is applied to all buttons in the toolbar */
