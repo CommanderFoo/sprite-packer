@@ -406,10 +406,10 @@ async function init() {
 	const sorting_methods = [
 		{ value: "name-asc", label: "Name (A-Z)" },
 		{ value: "name-desc", label: "Name (Z-A)" },
-		{ value: "fileSize-asc", label: "File Size (Small - Large)" },
-		{ value: "fileSize-desc", label: "File Size (Large - Small)" },
-		{ value: "updated-desc", label: "Date Modified (Newest - Oldest)" },
-		{ value: "updated-asc", label: "Date Modified (Oldest - Newest)" },
+		{ value: "fileSize-asc", label: "Size (Small - Large)" },
+		{ value: "fileSize-desc", label: "Size (Large - Small)" },
+		{ value: "updated-desc", label: "Modified (Newest - Oldest)" },
+		{ value: "updated-asc", label: "Modified (Oldest - Newest)" },
 		{ value: "custom", label: "Custom (Drag & Drop)" }
 	];
 
@@ -556,6 +556,7 @@ async function save_project() {
 		atlas_size: atlas_size_select.value,
 		padding: padding_select.value,
 		sorting_method: sorting_method_select.value,
+		quality: quality_select.value
 	};
 
 	try {
@@ -574,6 +575,7 @@ async function load_project() {
 			atlas_size_select.value = project_data.atlas_size;
 			padding_select.value = project_data.padding;
 			sorting_method_select.value = project_data.sorting_method;
+			quality_select.value = project_data.quality;
 
 			await update_file_list();
 			update_atlas();
