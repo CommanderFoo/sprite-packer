@@ -178,8 +178,23 @@ function updatePreviewHighlight() {
     if (highlightedItem) {
       const highlightedRect = packedRects.find(rect => rect.data.path === highlightedItem);
       if (highlightedRect) {
+        let theAtlasSize = parseInt(atlasSizeSelect.value);
+
         const { x, y, width, height } = highlightedRect;
-        const scaleFactor = scaledSize / BASE_SIZE;
+        let scaleFactor = scaledSize / BASE_SIZE;
+
+        if(theAtlasSize == 256){
+          scaleFactor *= 4
+        } else if(theAtlasSize == 512){
+          scaleFactor *= 2
+        } else if(theAtlasSize == 2048){
+          scaleFactor /= 2
+        } else if(theAtlasSize == 4096){
+          scaleFactor /= 4
+        } else if(theAtlasSize == 8192){
+          scaleFactor /= 8
+        }
+
         const scaledX = x * scaleFactor;
         const scaledY = y * scaleFactor;
         const scaledWidth = width * scaleFactor;
