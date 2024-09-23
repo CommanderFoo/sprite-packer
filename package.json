@@ -1,19 +1,41 @@
 {
-  "name": "sprite-packer",
-  "version": "1.0.0",
+  "name": "Sprite Packer",
+  "version": "0.9.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir --win",
+    "dist": "electron-builder --win"
   },
   "keywords": [],
   "author": "CommanderFoo",
   "license": "ISC",
-  "description": "",
+  "description": "A sprite packing application that allows users to load images, arrange them into a texture atlas, and save the resulting atlas. Supports various atlas sizes, including non-square dimensions, and provides zoom and pan functionality for previewing the atlas.",
   "devDependencies": {
-    "electron": "^32.1.2"
+    "electron": "^32.1.2",
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.3.4",
+    "sharp": "^0.33.5",
+    "electron-builder": "^23.0.0"
   },
   "dependencies": {
     "electron-store": "^10.0.0",
     "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "net.pixeldepth.spritepacker",
+    "mac": {
+      "icon": "assets/icons/macicon.icns"
+    },
+    "win": {
+      "icon": "assets/icons/winicon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "CommanderFoo",
+        "repo": "sprite-packer"
+      }
+    ]
   }
 }

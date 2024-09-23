@@ -2,6 +2,7 @@
 const path = require("path");
 const fs = require("fs").promises;
 const sharp = require("sharp");
+const { autoUpdater } = require("electron-updater");
 
 let store;
 let main_window;
@@ -26,14 +27,17 @@ function create_window() {
 			// Add this line to set a Content Security Policy
 			contentSecurityPolicy: "default-src 'self'; script-src 'self'"
 		},
+		icon: path.join(__dirname, "assets/icons/icon256.png")
 	});
 
-	//main_window.setMenuBarVisibility(false);
+	main_window.setMenuBarVisibility(false);
 	main_window.loadFile("index.html");
 
 	// Set the theme based on the stored value or system preference
 	const is_dark_mode = store.get("dark_mode", nativeTheme.shouldUseDarkColors);
 	nativeTheme.themeSource = is_dark_mode ? "dark" : "light";
+
+	autoUpdater.checkForUpdatesAndNotify();
 }
 
 // Set the app name
@@ -92,12 +96,6 @@ app.whenReady().then(async () => {
 				return { path, buffer, stats, width: metadata.width, height: metadata.height };
 			}));
 
-			// Ensure atlas_size is within the supported range
-			const max_size = 8192; // New maximum size
-			if (atlas_size > max_size) {
-				atlas_size = max_size;
-			}
-
 			// Custom packing algorithm
 			const packed_rects = [];
 			let current_x = padding;
@@ -108,14 +106,14 @@ app.whenReady().then(async () => {
 				const width = img.width + padding * 2;
 				const height = img.height + padding * 2;
 
-				if (current_x + width > atlas_size) {
+				if (current_x + width > atlas_size.width) {
 					// Move to the next row
 					current_x = padding;
 					current_y += row_height + padding;
 					row_height = 0;
 				}
 
-				if (current_y + height > atlas_size) {
+				if (current_y + height > atlas_size.height) {
 					continue;
 				}
 
@@ -244,4 +242,26 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
 	if (BrowserWindow.getAllWindows().length === 0) create_window();
+});
+
+autoUpdater.on("update-available", () => {
+    dialog.showMessageBox({
+        type: "info",
+        title: "Update Available",
+        message: "A new version of Sprite Packer is available. It will be downloaded in the background.",
+        buttons: ["OK"]
+    });
+});
+
+autoUpdater.on("update-downloaded", () => {
+    dialog.showMessageBox({
+        type: "info",
+        title: "Update Ready",
+        message: "A new version of Sprite Packer is ready. Restart the application to apply the update.",
+        buttons: ["Restart", "Later"]
+    }).then(result => {
+        if (result.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
 });

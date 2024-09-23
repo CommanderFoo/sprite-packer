@@ -19,12 +19,42 @@ let image_files = [];
 let packed_atlas_data_url = null;
 let is_custom_sorting = false;
 let packed_rects = [];
-let current_atlas_size = 1024; // Added variable to store the current atlas size
+let current_atlas_size = { width: 1024, height: 1024 };
 
 let is_dragging = false;
 let last_x, last_y;
 let canvas_offset_x = 0;
 let canvas_offset_y = 0;
+
+const atlas_sizes = [
+	{ width: 32, height: 32 },
+	{ width: 64, height: 64 },
+	{ width: 128, height: 64 },
+	{ width: 128, height: 128 },
+	{ width: 256, height: 128 },
+    { width: 256, height: 256 },
+    { width: 512, height: 512 },
+	{ width: 512, height: 256 },
+    { width: 1024, height: 1024 },
+	{ width: 2048, height: 1024 },
+    { width: 2048, height: 2048 },
+	{ width: 4096, height: 2048 },
+    { width: 4096, height: 4096 },
+    { width: 8192, height: 8192 },
+	{ width: 8192, height: 4096 }
+];
+
+atlas_size_select.innerHTML = ""; // Clear existing options
+
+atlas_sizes.forEach(size => {
+    const option = document.createElement("option");
+    option.value = `${size.width}x${size.height}`;
+    option.textContent = `${size.width} x ${size.height}`;
+    if (size.width === 1024 && size.height === 1024) {
+        option.selected = true; // Set 1024x1024 as the default option
+    }
+    atlas_size_select.appendChild(option);
+});
 
 // Event listener for selecting a folder
 select_folder_btn.addEventListener("click", async () => {
@@ -347,48 +377,52 @@ document.head.appendChild(style);
 
 // Function to update the atlas
 async function update_atlas() {
-	if (image_files.length === 0) return;
-
-	try {
-		current_atlas_size = parseInt(atlas_size_select.value);
-		const padding = parseInt(padding_select.value);
-		const sorting_method = sorting_method_select.value;
-
-		const result = await window.electronAPI.pack_texture({
-			image_paths: image_files.map(file => file.path),
-			atlas_size: current_atlas_size,
-			padding,
-			sorting_method
-		});
-
-		if (!result || !result.packed_rects || result.packed_rects.length === 0) {
-			throw new Error("No images were packed into the atlas");
-		}
-
-		// Create a map of path to packed rect for quick lookup
-		const rect_map = new Map(result.packed_rects.map(rect => [rect.data.path, rect]));
-
-		// Create packed_rects array in the exact order of image_files
-		packed_rects = image_files.map(file => {
-			const rect = rect_map.get(file.path);
-			if (!rect) {
-				return null;
-			}
-			return rect;
-		}).filter(Boolean);
-
-		// Ensure the rendering uses the packed_rects order
-		packed_atlas_data_url = await render_atlas(packed_rects, current_atlas_size);
-		update_preview(packed_atlas_data_url);
-
-		// Enable the save button after successful atlas generation
-		save_atlas_btn.disabled = false;
-	} catch (error) {
-		alert("Error updating atlas: " + error.message);
-
-		// Disable the save button if there's an error
-		save_atlas_btn.disabled = true;
+    if (image_files.length === 0){
+		update_canvas_container_size();
+		return;
 	}
+
+    try {
+        const [width, height] = atlas_size_select.value.split("x").map(Number);
+        current_atlas_size = { width, height };
+        const padding = parseInt(padding_select.value);
+        const sorting_method = sorting_method_select.value;
+
+        const result = await window.electronAPI.pack_texture({
+            image_paths: image_files.map(file => file.path),
+            atlas_size: current_atlas_size,
+            padding,
+            sorting_method
+        });
+
+        if (!result || !result.packed_rects || result.packed_rects.length === 0) {
+            throw new Error("No images were packed into the atlas");
+        }
+
+        // Create a map of path to packed rect for quick lookup
+        const rect_map = new Map(result.packed_rects.map(rect => [rect.data.path, rect]));
+
+        // Create packed_rects array in the exact order of image_files
+        packed_rects = image_files.map(file => {
+            const rect = rect_map.get(file.path);
+            if (!rect) {
+                return null;
+            }
+            return rect;
+        }).filter(Boolean);
+
+        // Ensure the rendering uses the packed_rects order
+        packed_atlas_data_url = await render_atlas(packed_rects, current_atlas_size);
+        update_preview(packed_atlas_data_url);
+
+        // Enable the save button after successful atlas generation
+        save_atlas_btn.disabled = false;
+    } catch (error) {
+        alert("Error updating atlas: " + error.message);
+
+        // Disable the save button if there's an error
+        save_atlas_btn.disabled = true;
+    }
 }
 
 // Helper functions (render_atlas, update_preview, format_file_size, etc.) remain the same
@@ -424,74 +458,73 @@ async function init() {
 init();
 
 async function render_atlas(packed_rects, atlas_size) {
-	const canvas = new OffscreenCanvas(atlas_size, atlas_size);
-	const ctx = canvas.getContext("2d");
+    const canvas = new OffscreenCanvas(atlas_size.width, atlas_size.height);
+    const ctx = canvas.getContext("2d");
 
-	ctx.clearRect(0, 0, atlas_size, atlas_size);
+    ctx.clearRect(0, 0, atlas_size.width, atlas_size.height);
 
-	for (const rect of packed_rects) {
-		if (!rect || !rect.data || !rect.data.buffer) {
-			continue;
-		}
-		try {
-			const img = await createImageBitmap(new Blob([rect.data.buffer]));
-			ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
-		} catch (error) {
+    for (const rect of packed_rects) {
+        if (!rect || !rect.data || !rect.data.buffer) {
+            continue;
+        }
+        try {
+            const img = await createImageBitmap(new Blob([rect.data.buffer]));
+            ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+        } catch (error) {
 
-		}
-	}
+        }
+    }
 
-	return canvas.convertToBlob({ type: "image/png" }).then(blob => {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result);
-			reader.onerror = reject;
-			reader.readAsDataURL(blob);
-		});
-	});
+    return canvas.convertToBlob({ type: "image/png" }).then(blob => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    });
 }
 
 function update_preview(data_url) {
-	const img = new Image();
-	img.onload = () => {
-		const max_size = Math.max(current_atlas_size, 1024);
-		const scaled_size = Math.ceil(max_size);
+    const img = new Image();
+    img.onload = () => {
+        const max_width = Math.max(current_atlas_size.width, 1024);
+        const max_height = Math.max(current_atlas_size.height, 1024);
 
-		preview_canvas.width = max_size;
-		preview_canvas.height = max_size;
+        preview_canvas.width = max_width;
+        preview_canvas.height = max_height;
 
-		ctx.clearRect(0, 0, max_size, max_size);
+        ctx.clearRect(0, 0, max_width, max_height);
 
-		// Draw checkerboard background to show transparency
-		const tile_size = Math.max(1, Math.ceil(10));
-		for (let x = 0; x < max_size; x += tile_size) {
-			for (let y = 0; y < max_size; y += tile_size) {
-				ctx.fillStyle = (Math.floor(x / tile_size) + Math.floor(y / tile_size)) % 2 === 0 ? "#FFF" : "#DDD";
-				ctx.fillRect(x, y, tile_size, tile_size);
-			}
-		}
+        // Draw checkerboard background to show transparency
+        const tile_size = Math.max(1, Math.ceil(10));
+        for (let x = 0; x < max_width; x += tile_size) {
+            for (let y = 0; y < max_height; y += tile_size) {
+                ctx.fillStyle = (Math.floor(x / tile_size) + Math.floor(y / tile_size)) % 2 === 0 ? "#FFF" : "#DDD";
+                ctx.fillRect(x, y, tile_size, tile_size);
+            }
+        }
 
-		// Draw the atlas image
-		ctx.imageSmoothingEnabled = false; // Disable image smoothing for pixel-perfect rendering
-		ctx.drawImage(img, 0, 0, max_size, max_size);
+        // Draw the atlas image
+        ctx.imageSmoothingEnabled = false; // Disable image smoothing for pixel-perfect rendering
+        ctx.drawImage(img, 0, 0, max_width, max_height);
 
-		// Update canvas container size
-		update_canvas_container_size();
+        // Update canvas container size
+        update_canvas_container_size();
 
-		// Apply the current offset
-		apply_canvas_offset();
-	};
-	img.onerror = (error) => {
+        // Apply the current offset
+        apply_canvas_offset();
+    };
 
-	};
-	img.src = data_url;
+    img.src = data_url;
 }
 
 function update_canvas_container_size() {
 	// canvas_container.style.width = `${current_atlas_size}px`;
 	// canvas_container.style.height = `${current_atlas_size}px`;
-	preview_canvas.style.width = `${current_atlas_size}px`;
-	preview_canvas.style.height = `${current_atlas_size}px`;
+	const [width, height] = atlas_size_select.value.split("x").map(Number);
+	preview_canvas.style.width = `${width}px`;
+	preview_canvas.style.height = `${height}px`;
 }
 
 let scale_factor = 1; // Initial scale factor
