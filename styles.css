@@ -78,6 +78,7 @@ body {
 
 #file-list {
     width: 300px;
+    min-width: 300px;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0; /* Light mode divider */
     padding: 20px;
