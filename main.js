@@ -1,252 +1,245 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, nativeTheme, webContents, shell } = require('electron');
-const path = require('path');
-const fs = require('fs').promises;
-const sharp = require('sharp');
+﻿const { app, BrowserWindow, ipcMain, dialog, nativeTheme, webContents, shell } = require("electron");
+const path = require("path");
+const fs = require("fs").promises;
+const sharp = require("sharp");
 
 let store;
-let mainWindow;
+let main_window;
 
-async function initializeStore() {
-  const { default: Store } = await import('electron-store');
-  store = new Store();
+async function initialize_store() {
+	const { default: Store } = await import("electron-store");
+	store = new Store();
 }
 
-function createWindow() {
-  // Increase window size by 20%
-  const width = Math.round(1200 * 1.2);
-  const height = Math.round(800 * 1.2);
+function create_window() {
+	// Increase window size by 20%
+	const width = Math.round(1200 * 1.2);
+	const height = Math.round(800 * 1.2);
 
-  mainWindow = new BrowserWindow({
-    width: width,
-    height: height,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
-      // Add this line to set a Content Security Policy
-      contentSecurityPolicy: "default-src 'self'; script-src 'self'"
-    },
-  });
+	main_window = new BrowserWindow({
+		width: width,
+		height: height,
+		webPreferences: {
+			nodeIntegration: false,
+			contextIsolation: true,
+			preload: path.join(__dirname, "preload.js"),
+			// Add this line to set a Content Security Policy
+			contentSecurityPolicy: "default-src 'self'; script-src 'self'"
+		},
+	});
 
-  //mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile('index.html');
+	//main_window.setMenuBarVisibility(false);
+	main_window.loadFile("index.html");
 
-  // Set the theme based on the stored value or system preference
-  const isDarkMode = store.get('darkMode', nativeTheme.shouldUseDarkColors);
-  nativeTheme.themeSource = isDarkMode ? 'dark' : 'light';
+	// Set the theme based on the stored value or system preference
+	const is_dark_mode = store.get("dark_mode", nativeTheme.shouldUseDarkColors);
+	nativeTheme.themeSource = is_dark_mode ? "dark" : "light";
 }
 
 // Set the app name
-app.name = 'Sprite Packer';
+app.name = "Sprite Packer";
 
-const compareStrings = (a, b) => {
-  const aChars = [...a];
-  const bChars = [...b];
-  for (let i = 0; i < Math.min(aChars.length, bChars.length); i++) {
-    if (aChars[i] !== bChars[i]) {
-      return aChars[i].localeCompare(bChars[i]);
-    }
-  }
-  return aChars.length - bChars.length;
+const compare_strings = (a, b) => {
+	const a_chars = [...a];
+	const b_chars = [...b];
+	for (let i = 0; i < Math.min(a_chars.length, b_chars.length); i++) {
+		if (a_chars[i] !== b_chars[i]) {
+			return a_chars[i].localeCompare(b_chars[i]);
+		}
+	}
+	return a_chars.length - b_chars.length;
 };
 
 app.whenReady().then(async () => {
-  await initializeStore();
-  createWindow();
+	await initialize_store();
+	create_window();
 
-  ipcMain.handle('select-folder', async () => {
-    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
-    if (result.filePaths[0]) {
-      await addRecentFolder(result.filePaths[0]);
-    }
-    return result.filePaths[0];
-  });
+	ipcMain.handle("select-folder", async () => {
+		const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
+		if (result.filePaths[0]) {
+			await add_recent_folder(result.filePaths[0]);
+		}
+		return result.filePaths[0];
+	});
 
-  ipcMain.handle('load-images', async (event, folderPath) => {
-    const files = await fs.readdir(folderPath);
-    const imageFiles = files.filter(file => 
-      ['.png', '.jpg', '.jpeg'].includes(path.extname(file).toLowerCase())
-    );
-    const imagesWithStats = await Promise.all(imageFiles.map(async file => {
-      const filePath = path.join(folderPath, file);
-      const stats = await fs.stat(filePath);
-      return {
-        path: filePath,
-        name: path.parse(file).name,
-        stats: {
-          size: stats.size,
-          birthtime: stats.birthtime,
-          mtime: stats.mtime
-        }
-      };
-    }));
-    return imagesWithStats;
-  });
+	ipcMain.handle("load-images", async (event, folder_path) => {
+		const files = await fs.readdir(folder_path);
+		const image_files = files.filter(file =>
+			[".png", ".jpg", ".jpeg"].includes(path.extname(file).toLowerCase())
+		);
+		const images_with_stats = await Promise.all(image_files.map(async file => {
+			const file_path = path.join(folder_path, file);
+			const stats = await fs.stat(file_path);
+			return {
+				path: file_path,
+				name: path.parse(file).name,
+				stats: {
+					size: stats.size,
+					birthtime: stats.birthtime,
+					mtime: stats.mtime
+				}
+			};
+		}));
+		return images_with_stats;
+	});
 
-  ipcMain.handle('pack-texture', async (event, { imagePaths, atlasSize, padding, sortingMethod }) => {
-    try {
-      console.log('Packing texture in main process:', { imagePaths, atlasSize, padding, sortingMethod });
-      const images = await Promise.all(imagePaths.map(async (path) => {
-        const buffer = await fs.readFile(path);
-        const stats = await fs.stat(path);
-        const metadata = await sharp(buffer).metadata();
-        return { path, buffer, stats, width: metadata.width, height: metadata.height };
-      }));
+	ipcMain.handle("pack-texture", async (event, { image_paths, atlas_size, padding, sorting_method }) => {
+		try {
+			const images = await Promise.all(image_paths.map(async (path) => {
+				const buffer = await fs.readFile(path);
+				const stats = await fs.stat(path);
+				const metadata = await sharp(buffer).metadata();
+				return { path, buffer, stats, width: metadata.width, height: metadata.height };
+			}));
 
-      // Ensure atlasSize is within the supported range
-      const maxSize = 8192; // New maximum size
-      if (atlasSize > maxSize) {
-        console.warn(`Atlas size ${atlasSize} is too large. Using maximum size of ${maxSize}.`);
-        atlasSize = maxSize;
-      }
+			// Ensure atlas_size is within the supported range
+			const max_size = 8192; // New maximum size
+			if (atlas_size > max_size) {
+				atlas_size = max_size;
+			}
 
-     
+			// Custom packing algorithm
+			const packed_rects = [];
+			let current_x = padding;
+			let current_y = padding;
+			let row_height = 0;
 
-      // Custom packing algorithm
-      const packedRects = [];
-      let currentX = padding;
-      let currentY = padding;
-      let rowHeight = 0;
+			for (const img of images) {
+				const width = img.width + padding * 2;
+				const height = img.height + padding * 2;
 
-      for (const img of images) {
-        const width = img.width + padding * 2;
-        const height = img.height + padding * 2;
+				if (current_x + width > atlas_size) {
+					// Move to the next row
+					current_x = padding;
+					current_y += row_height + padding;
+					row_height = 0;
+				}
 
-        if (currentX + width > atlasSize) {
-          // Move to the next row
-          currentX = padding;
-          currentY += rowHeight + padding;
-          rowHeight = 0;
-        }
+				if (current_y + height > atlas_size) {
+					continue;
+				}
 
-        if (currentY + height > atlasSize) {
-          console.warn('Unable to pack image:', img.path);
-          continue;
-        }
+				packed_rects.push({
+					x: current_x,
+					y: current_y,
+					width: img.width,
+					height: img.height,
+					data: img
+				});
 
-        packedRects.push({
-          x: currentX,
-          y: currentY,
-          width: img.width,
-          height: img.height,
-          data: img
-        });
+				current_x += width;
+				row_height = Math.max(row_height, height);
+			}
 
-        currentX += width;
-        rowHeight = Math.max(rowHeight, height);
-      }
+			return { packed_rects, images };
+		} catch (error) {
+			throw error;
+		}
+	});
 
-      console.log('Packer result:', packedRects);
-      return { packedRects, images };
-    } catch (error) {
-      console.error('Error in pack-texture:', error);
-      throw error;
-    }
-  });
+	ipcMain.handle("save-atlas", async (event, { data_url, default_path }) => {
+		const result = await dialog.showSaveDialog({
+			default_path,
+			filters: [{ name: "PNG", extensions: ["png"] }]
+		});
+		if (!result.canceled) {
+			const base64_data = data_url.replace(/^data:image\/png;base64,/, "");
+			await fs.writeFile(result.filePath, base64_data, "base64");
+			return result.filePath;
+		}
+	});
 
-  ipcMain.handle('save-atlas', async (event, { dataUrl, defaultPath }) => {
-    const result = await dialog.showSaveDialog({
-      defaultPath,
-      filters: [{ name: 'PNG', extensions: ['png'] }]
-    });
-    if (!result.canceled) {
-      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
-      await fs.writeFile(result.filePath, base64Data, 'base64');
-      return result.filePath;
-    }
-  });
+	ipcMain.handle("read-file", async (event, file_path) => {
+		return await fs.readFile(file_path);
+	});
 
-  ipcMain.handle('read-file', async (event, filePath) => {
-    return await fs.readFile(filePath);
-  });
+	ipcMain.handle("get-recent-folders", () => {
+		return store.get("recent_folders", []);
+	});
 
-  ipcMain.handle('get-recent-folders', () => {
-    return store.get('recentFolders', []);
-  });
+	ipcMain.handle("add-recent-folder", (event, folder) => {
+		return add_recent_folder(folder);
+	});
 
-  ipcMain.handle('add-recent-folder', (event, folder) => {
-    return addRecentFolder(folder);
-  });
+	ipcMain.handle("toggle-dark-mode", () => {
+		const is_dark_mode = nativeTheme.shouldUseDarkColors;
+		nativeTheme.themeSource = is_dark_mode ? "light" : "dark";
+		store.set("dark_mode", !is_dark_mode);
+		return !is_dark_mode;
+	});
 
-  ipcMain.handle('toggle-dark-mode', () => {
-    const isDarkMode = nativeTheme.shouldUseDarkColors;
-    nativeTheme.themeSource = isDarkMode ? 'light' : 'dark';
-    store.set('darkMode', !isDarkMode);
-    return !isDarkMode;
-  });
+	ipcMain.handle("get-theme", () => {
+		return nativeTheme.shouldUseDarkColors;
+	});
 
-  ipcMain.handle('get-theme', () => {
-    return nativeTheme.shouldUseDarkColors;
-  });
+	ipcMain.handle("get-file-stats", async (event, file_path) => {
+		return await fs.stat(file_path);
+	});
 
-  ipcMain.handle('get-file-stats', async (event, filePath) => {
-    return await fs.stat(filePath);
-  });
+	ipcMain.handle("get-image-preview", async (event, file_path) => {
+		const buffer = await fs.readFile(file_path);
+		const resized_buffer = await sharp(buffer)
+			.resize(50, 50, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+			.toBuffer();
+		return {
+			preview: `data:image/png;base64,${resized_buffer.toString("base64")}`,
+			name: path.parse(file_path).name // Return the filename without extension
+		};
+	});
 
-  ipcMain.handle('get-image-preview', async (event, filePath) => {
-    const buffer = await fs.readFile(filePath);
-    const resizedBuffer = await sharp(buffer)
-      .resize(50, 50, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .toBuffer();
-    return {
-      preview: `data:image/png;base64,${resizedBuffer.toString('base64')}`,
-      name: path.parse(filePath).name // Return the filename without extension
-    };
-  });
+	// Add these new IPC handlers for atlas zoom functionality
+	ipcMain.handle("set-atlas-zoom", (event, zoom_factor) => {
+		store.set("atlas_zoom_factor", zoom_factor);
+		return zoom_factor;
+	});
 
-  // Add these new IPC handlers for atlas zoom functionality
-  ipcMain.handle('set-atlas-zoom', (event, zoomFactor) => {
-    store.set('atlasZoomFactor', zoomFactor);
-    return zoomFactor;
-  });
+	ipcMain.handle("get-atlas-zoom", () => {
+		return store.get("atlas_zoom_factor", 0.6); // Change default to 0.6 (60%)
+	});
 
-  ipcMain.handle('get-atlas-zoom', () => {
-    return store.get('atlasZoomFactor', 0.6); // Change default to 0.6 (60%)
-  });
+	// Add these new IPC handlers
+	ipcMain.handle("save-project", async (event, project_data) => {
+		const result = await dialog.showSaveDialog({
+			title: "Save Project",
+			default_path: "sprite_packer_project.json",
+			filters: [{ name: "JSON", extensions: ["json"] }]
+		});
 
-  // Add these new IPC handlers
-  ipcMain.handle('save-project', async (event, projectData) => {
-    const result = await dialog.showSaveDialog({
-      title: 'Save Project',
-      defaultPath: 'sprite_packer_project.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    });
+		if (!result.canceled) {
+			await fs.writeFile(result.filePath, JSON.stringify(project_data, null, 2));
+			return result.filePath;
+		}
+	});
 
-    if (!result.canceled) {
-      await fs.writeFile(result.filePath, JSON.stringify(projectData, null, 2));
-      return result.filePath;
-    }
-  });
+	ipcMain.handle("load-project", async () => {
+		const result = await dialog.showOpenDialog({
+			title: "Load Project",
+			filters: [{ name: "JSON", extensions: ["json"] }],
+			properties: ["openFile"]
+		});
 
-  ipcMain.handle('load-project', async () => {
-    const result = await dialog.showOpenDialog({
-      title: 'Load Project',
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-      properties: ['openFile']
-    });
+		if (!result.canceled && result.filePaths.length > 0) {
+			const project_data = await fs.readFile(result.filePaths[0], "utf-8");
+			return JSON.parse(project_data);
+		}
+	});
 
-    if (!result.canceled && result.filePaths.length > 0) {
-      const projectData = await fs.readFile(result.filePaths[0], 'utf-8');
-      return JSON.parse(projectData);
-    }
-  });
-
-  ipcMain.handle('open-external', (event, url) => {
-    shell.openExternal(url);
-  });
+	ipcMain.handle("open-external", (event, url) => {
+		shell.openExternal(url);
+	});
 });
 
-async function addRecentFolder(folder) {
-  let recentFolders = store.get('recentFolders', []);
-  recentFolders = [folder, ...recentFolders.filter(f => f !== folder)].slice(0, 10);
-  store.set('recentFolders', recentFolders);
-  return recentFolders;
+async function add_recent_folder(folder) {
+	let recent_folders = store.get("recent_folders", []);
+	recent_folders = [folder, ...recent_folders.filter(f => f !== folder)].slice(0, 10);
+	store.set("recent_folders", recent_folders);
+	return recent_folders;
 }
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+app.on("activate", () => {
+	if (BrowserWindow.getAllWindows().length === 0) create_window();
 });
