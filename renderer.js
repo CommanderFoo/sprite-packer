@@ -1,332 +1,333 @@
-const selectFolderBtn = document.getElementById('selectFolderBtn');
-const atlasSizeSelect = document.getElementById('atlasSizeSelect');
-const paddingSelect = document.getElementById('paddingSelect');
-const sortingMethodSelect = document.getElementById('sortingMethodSelect');
-const toggleThemeBtn = document.getElementById('toggleThemeBtn');
-const fileListContainer = document.getElementById('fileListContainer');
-const previewCanvas = document.getElementById('previewCanvas');
-const ctx = previewCanvas.getContext('2d');
-const canvasContainer = document.getElementById('canvasContainer');
+const select_folder_btn = document.getElementById("selectFolderBtn");
+const atlas_size_select = document.getElementById("atlasSizeSelect");
+const padding_select = document.getElementById("paddingSelect");
+const sorting_method_select = document.getElementById("sortingMethodSelect");
+const toggle_theme_btn = document.getElementById("toggleThemeBtn");
+const file_list_container = document.getElementById("fileListContainer");
+const preview_canvas = document.getElementById("previewCanvas");
+const ctx = preview_canvas.getContext("2d");
+const canvas_container = document.getElementById("canvasContainer");
 
-const saveAtlasBtn = document.getElementById('saveAtlasBtn');
-const saveProjectBtn = document.getElementById('saveProjectBtn');
-const loadProjectBtn = document.getElementById('loadProjectBtn');
-const githubBtn = document.getElementById('githubBtn');
+const save_atlas_btn = document.getElementById("saveAtlasBtn");
+const save_project_btn = document.getElementById("saveProjectBtn");
+const load_project_btn = document.getElementById("loadProjectBtn");
+const github_btn = document.getElementById("githubBtn");
 
-let selectedFolder = null;
-let imageFiles = [];
-let packedAtlasDataUrl = null;
-let zoomLevel = 1;
-const zoomStep = 0.1;
-let isCustomSorting = false;
-let packedRects = [];
-let currentAtlasSize = 1024; // Added variable to store the current atlas size
+let selected_folder = null;
+let image_files = [];
+let packed_atlas_data_url = null;
+let is_custom_sorting = false;
+let packed_rects = [];
+let current_atlas_size = 1024; // Added variable to store the current atlas size
+
+let is_dragging = false;
+let last_x, last_y;
+let canvas_offset_x = 0;
+let canvas_offset_y = 0;
 
 // Event listener for selecting a folder
-selectFolderBtn.addEventListener('click', async () => {
-  try {
-    selectedFolder = await window.electronAPI.selectFolder();
-    if (selectedFolder) {
-      imageFiles = await window.electronAPI.loadImages(selectedFolder);
-      await updateFileList(); // This will sort the imageFiles
-      updateAtlas();
-    }
-  } catch (error) {
-    alert('Error selecting folder: ' + error.message);
-  }
+select_folder_btn.addEventListener("click", async () => {
+	try {
+		selected_folder = await window.electronAPI.select_folder();
+		if (selected_folder) {
+			image_files = await window.electronAPI.load_images(selected_folder);
+			await update_file_list(); // This will sort the image_files
+			update_atlas();
+		}
+	} catch (error) {
+		alert("Error selecting folder: " + error.message);
+	}
 });
 
 // Event listeners for atlas options
-[atlasSizeSelect, paddingSelect, sortingMethodSelect].forEach(select => {
-  select.addEventListener('change', () => {
-    isCustomSorting = sortingMethodSelect.value === 'custom';
-    updateFileList();
-    updateAtlas();
-  });
+[atlas_size_select, padding_select, sorting_method_select].forEach(select => {
+	select.addEventListener("change", () => {
+		is_custom_sorting = sorting_method_select.value === "custom";
+		update_file_list();
+		update_atlas();
+	});
 });
 
 // Event listener for toggling theme
-toggleThemeBtn.addEventListener('click', async () => {
-  const isDark = await window.electronAPI.toggleDarkMode();
-  applyTheme(isDark);
+toggle_theme_btn.addEventListener("click", async () => {
+	const is_dark = await window.electronAPI.toggle_dark_mode();
+	apply_theme(is_dark);
 });
 
-let highlightedItem = null;
+let highlighted_item = null;
 
-async function updateFileList() {
-  const sortingMethod = sortingMethodSelect.value;
-  
-  if (sortingMethod !== 'custom') {
-    const [method, order] = sortingMethod.split('-');
-    
-    // Custom string comparison function
-    const compareStrings = (a, b) => {
-      const aChars = [...a];
-      const bChars = [...b];
-      for (let i = 0; i < Math.min(aChars.length, bChars.length); i++) {
-        if (aChars[i] !== bChars[i]) {
-          return aChars[i].localeCompare(bChars[i]);
-        }
-      }
-      return aChars.length - bChars.length;
-    };
+async function update_file_list() {
+	const sorting_method = sorting_method_select.value;
 
-    // Sort imageFiles based on the selected method
-    imageFiles.sort((a, b) => {
-      let comparison;
-      switch (method) {
-        case 'fileSize':
-          comparison = a.stats.size - b.stats.size;
-          break;
-        case 'name':
-          comparison = compareStrings(a.name, b.name);
-          break;
-        case 'updated':
-          comparison = a.stats.mtime.getTime() - b.stats.mtime.getTime();
-          break;
-        default:
-          return 0;
-      }
-      // If the primary comparison results in a tie, use the name as a secondary sort
-      if (comparison === 0 && method !== 'name') {
-        comparison = compareStrings(a.name, b.name);
-      }
-      return order === 'asc' ? comparison : -comparison;
-    });
-  }
+	if (sorting_method !== "custom") {
+		const [method, order] = sorting_method.split("-");
 
-  fileListContainer.innerHTML = '';
-  for (const file of imageFiles) {
-    const li = document.createElement('li');
-    li.draggable = true;
-    li.dataset.path = file.path;
-    
-    // Create image preview
-    const img = document.createElement('img');
-    const preview = await window.electronAPI.getImagePreview(file.path);
-    img.src = preview.preview;
-    img.alt = file.name;
-    li.appendChild(img);
+		// Custom string comparison function
+		const compare_strings = (a, b) => {
+			const a_chars = [...a];
+			const b_chars = [...b];
+			for (let i = 0; i < Math.min(a_chars.length, b_chars.length); i++) {
+				if (a_chars[i] !== b_chars[i]) {
+					return a_chars[i].localeCompare(b_chars[i]);
+				}
+			}
+			return a_chars.length - b_chars.length;
+		};
 
-    // Create info container
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'file-info';
+		// Sort image_files based on the selected method
+		image_files.sort((a, b) => {
+			let comparison;
+			switch (method) {
+				case "fileSize":
+					comparison = a.stats.size - b.stats.size;
+					break;
+				case "name":
+					comparison = compare_strings(a.name, b.name);
+					break;
+				case "updated":
+					comparison = a.stats.mtime.getTime() - b.stats.mtime.getTime();
+					break;
+				default:
+					return 0;
+			}
+			// If the primary comparison results in a tie, use the name as a secondary sort
+			if (comparison === 0 && method !== "name") {
+				comparison = compare_strings(a.name, b.name);
+			}
+			return order === "asc" ? comparison : -comparison;
+		});
+	}
 
-    // File name
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'file-name';
-    nameSpan.textContent = file.name;
-    infoDiv.appendChild(nameSpan);
+	file_list_container.innerHTML = "";
+	for (const file of image_files) {
+		const li = document.createElement("li");
+		li.draggable = true;
+		li.dataset.path = file.path;
 
-    // File size
-    const sizeSpan = document.createElement('span');
-    sizeSpan.className = 'file-size';
-    sizeSpan.textContent = formatFileSize(file.stats.size);
-    infoDiv.appendChild(sizeSpan);
+		// Create image preview
+		const img = document.createElement("img");
+		const preview = await window.electronAPI.get_image_preview(file.path);
+		img.src = preview.preview;
+		img.alt = file.name;
+		li.appendChild(img);
 
-    li.appendChild(infoDiv);
+		// Create info container
+		const info_div = document.createElement("div");
+		info_div.className = "file-info";
 
-    // Add delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.innerHTML = '&times;';
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeFile(file.path);
-    });
-    li.appendChild(deleteBtn);
+		// File name
+		const name_span = document.createElement("span");
+		name_span.className = "file-name";
+		name_span.textContent = file.name;
+		info_div.appendChild(name_span);
 
-    fileListContainer.appendChild(li);
+		// File size
+		const size_span = document.createElement("span");
+		size_span.className = "file-size";
+		size_span.textContent = format_file_size(file.stats.size);
+		info_div.appendChild(size_span);
 
-    // Add drag and drop event listeners
-    li.addEventListener('dragstart', dragStart);
-    li.addEventListener('dragover', dragOver);
-    li.addEventListener('dragleave', dragLeave);
-    li.addEventListener('drop', drop);
+		li.appendChild(info_div);
 
-    // Add click event listener for highlighting
-    //li.addEventListener('click', () => toggleHighlight(file.path));
-  }
+		// Add delete button
+		const delete_btn = document.createElement("button");
+		delete_btn.className = "delete-btn";
+		delete_btn.innerHTML = "&times;";
+		delete_btn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			remove_file(file.path);
+		});
+		li.appendChild(delete_btn);
 
-  console.log('Image files:', imageFiles);
+		file_list_container.appendChild(li);
+
+		// Add drag and drop event listeners
+		li.addEventListener("dragstart", drag_start);
+		li.addEventListener("dragover", drag_over);
+		li.addEventListener("dragleave", drag_leave);
+		li.addEventListener("drop", drop);
+
+		// Add click event listener for highlighting
+		li.addEventListener("click", () => toggle_highlight(file.path));
+	}
+}
+function remove_file(path) {
+	image_files = image_files.filter(file => file.path !== path);
+	update_file_list();
+	update_atlas();
 }
 
-function removeFile(path) {
-  imageFiles = imageFiles.filter(file => file.path !== path);
-  updateFileList();
-  updateAtlas();
+function toggle_highlight(path) {
+	// if (highlighted_item === path) {
+	// 	highlighted_item = null;
+	// 	update_preview_highlight();
+	// } else {
+	// 	highlighted_item = path;
+	// 	update_preview_highlight();
+	// }
 }
 
-function toggleHighlight(path) {
-  if (highlightedItem === path) {
-    highlightedItem = null;
-    updatePreviewHighlight();
-  } else {
-    highlightedItem = path;
-    updatePreviewHighlight();
-  }
+function update_preview_highlight() {
+	return;
+
+	if (!packed_atlas_data_url) return;
+
+	const img = new Image();
+	img.onload = () => {
+		const scaled_size = Math.ceil(current_atlas_size);
+
+		preview_canvas.width = scaled_size;
+		preview_canvas.height = scaled_size;
+
+		ctx.clearRect(0, 0, scaled_size, scaled_size);
+
+		// Draw checkerboard background
+		const tile_size = Math.max(1, Math.ceil(10));
+		for (let x = 0; x < scaled_size; x += tile_size) {
+			for (let y = 0; y < scaled_size; y += tile_size) {
+				ctx.fillStyle = (Math.floor(x / tile_size) + Math.floor(y / tile_size)) % 2 === 0 ? "#FFF" : "#DDD";
+				ctx.fillRect(x, y, tile_size, tile_size);
+			}
+		}
+
+		// Draw the atlas image
+		ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, scaled_size, scaled_size);
+
+		// Apply highlight effect
+		if (highlighted_item) {
+			const highlighted_rect = packed_rects.find(rect => rect.data.path === highlighted_item);
+			if (highlighted_rect) {
+				let the_atlas_size = parseInt(atlas_size_select.value);
+
+				const { x, y, width, height } = highlighted_rect;
+				let scale_factor = scaled_size / current_atlas_size;
+
+				if (the_atlas_size == 256) {
+					scale_factor *= 4;
+				} else if (the_atlas_size == 512) {
+					scale_factor *= 2;
+				} else if (the_atlas_size == 2048) {
+					scale_factor /= 2;
+				} else if (the_atlas_size == 4096) {
+					scale_factor /= 4;
+				} else if (the_atlas_size == 8192) {
+					scale_factor /= 8;
+				}
+
+				const scaled_x = x * scale_factor;
+				const scaled_y = y * scale_factor;
+				const scaled_width = width * scale_factor;
+				const scaled_height = height * scale_factor;
+
+				// Create a path for the entire canvas except the highlighted item
+				ctx.beginPath();
+				ctx.rect(0, 0, scaled_size, scaled_size);
+				ctx.rect(scaled_x, scaled_y, scaled_width, scaled_height);
+				ctx.closePath();
+
+				// Set the composite operation to "source-over" to draw over the existing content
+				ctx.globalCompositeOperation = "source-over";
+
+				// Fill the path with a semi-transparent black color
+				ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+				ctx.fill("evenodd");
+
+				// Reset the composite operation
+				ctx.globalCompositeOperation = "source-over";
+
+				// Draw a border around the highlighted item
+				ctx.strokeStyle = "yellow";
+				ctx.lineWidth = 2;
+				ctx.strokeRect(scaled_x, scaled_y, scaled_width, scaled_height);
+			}
+		}
+
+		update_canvas_container_size();
+	};
+	img.src = packed_atlas_data_url;
 }
 
-function updatePreviewHighlight() {
-  if (!packedAtlasDataUrl) return;
-
-  const img = new Image();
-  img.onload = () => {
-    const scaledSize = Math.ceil(currentAtlasSize * atlasZoom);
-    
-    previewCanvas.width = scaledSize;
-    previewCanvas.height = scaledSize;
-    
-    ctx.clearRect(0, 0, scaledSize, scaledSize);
-    
-    // Draw checkerboard background
-    const tileSize = Math.max(1, Math.ceil(10 * atlasZoom));
-    for (let x = 0; x < scaledSize; x += tileSize) {
-      for (let y = 0; y < scaledSize; y += tileSize) {
-        ctx.fillStyle = (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0 ? '#FFF' : '#DDD';
-        ctx.fillRect(x, y, tileSize, tileSize);
-      }
-    }
-    
-    // Draw the atlas image
-    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, scaledSize, scaledSize);
-
-    // Apply highlight effect
-    if (highlightedItem) {
-      const highlightedRect = packedRects.find(rect => rect.data.path === highlightedItem);
-      if (highlightedRect) {
-        let theAtlasSize = parseInt(atlasSizeSelect.value);
-
-        const { x, y, width, height } = highlightedRect;
-        let scaleFactor = scaledSize / currentAtlasSize;
-
-        if(theAtlasSize == 256){
-          scaleFactor *= 4
-        } else if(theAtlasSize == 512){
-          scaleFactor *= 2
-        } else if(theAtlasSize == 2048){
-          scaleFactor /= 2
-        } else if(theAtlasSize == 4096){
-          scaleFactor /= 4
-        } else if(theAtlasSize == 8192){
-          scaleFactor /= 8
-        }
-
-        const scaledX = x * scaleFactor;
-        const scaledY = y * scaleFactor;
-        const scaledWidth = width * scaleFactor;
-        const scaledHeight = height * scaleFactor;
-
-        // Create a path for the entire canvas except the highlighted item
-        ctx.beginPath();
-        ctx.rect(0, 0, scaledSize, scaledSize);
-        ctx.rect(scaledX, scaledY, scaledWidth, scaledHeight);
-        ctx.closePath();
-
-        // Set the composite operation to "source-over" to draw over the existing content
-        ctx.globalCompositeOperation = 'source-over';
-
-        // Fill the path with a semi-transparent black color
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fill('evenodd');
-
-        // Reset the composite operation
-        ctx.globalCompositeOperation = 'source-over';
-
-        // Draw a border around the highlighted item
-        ctx.strokeStyle = 'yellow';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
-      }
-    }
-
-    updateCanvasContainerSize();
-    applyCanvasOffset();
-  };
-  img.src = packedAtlasDataUrl;
-}
-
-// Modify the updatePreview function to use updatePreviewHighlight
-function updatePreview(dataUrl) {
-  packedAtlasDataUrl = dataUrl;
-  updatePreviewHighlight();
+// Modify the update_preview function to use update_preview_highlight
+function update_preview(data_url) {
+	packed_atlas_data_url = data_url;
+	update_preview_highlight();
 }
 
 // Drag and drop functions
-let draggedItem = null;
+let dragged_item = null;
 
-function dragStart(e) {
-  if (sortingMethodSelect.value !== 'custom') return;
-  draggedItem = e.target.closest('li');
-  e.dataTransfer.setData('text/plain', draggedItem.dataset.path);
-  setTimeout(() => {
-    draggedItem.classList.add('dragging');
-  }, 0);
-  
-  // Reset highlighting when dragging starts
-  if (highlightedItem) {
-    highlightedItem = null;
-    updatePreviewHighlight();
-  }
+function drag_start(e) {
+	if (sorting_method_select.value !== "custom") return;
+	dragged_item = e.target.closest("li");
+	e.dataTransfer.setData("text/plain", dragged_item.dataset.path);
+	setTimeout(() => {
+		dragged_item.classList.add("dragging");
+	}, 0);
+
+	// Reset highlighting when dragging starts
+	if (highlighted_item) {
+		highlighted_item = null;
+		update_preview_highlight();
+	}
 }
 
-function dragOver(e) {
-  if (sortingMethodSelect.value !== 'custom') return;
-  e.preventDefault();
-  const currentItem = e.target.closest('li');
-  if (currentItem && currentItem !== draggedItem) {
-    const rect = currentItem.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    if (y < rect.height / 2) {
-      currentItem.classList.remove('drag-over-bottom');
-      currentItem.classList.add('drag-over-top');
-    } else {
-      currentItem.classList.remove('drag-over-top');
-      currentItem.classList.add('drag-over-bottom');
-    }
-  }
+function drag_over(e) {
+	if (sorting_method_select.value !== "custom") return;
+	e.preventDefault();
+	const current_item = e.target.closest("li");
+	if (current_item && current_item !== dragged_item) {
+		const rect = current_item.getBoundingClientRect();
+		const y = e.clientY - rect.top;
+		if (y < rect.height / 2) {
+			current_item.classList.remove("drag-over-bottom");
+			current_item.classList.add("drag-over-top");
+		} else {
+			current_item.classList.remove("drag-over-top");
+			current_item.classList.add("drag-over-bottom");
+		}
+	}
 }
 
-function dragLeave(e) {
-  if (sortingMethodSelect.value !== 'custom') return;
-  const currentItem = e.target.closest('li');
-  if (currentItem) {
-    currentItem.classList.remove('drag-over-top', 'drag-over-bottom');
-  }
+function drag_leave(e) {
+	if (sorting_method_select.value !== "custom") return;
+	const current_item = e.target.closest("li");
+	if (current_item) {
+		current_item.classList.remove("drag-over-top", "drag-over-bottom");
+	}
 }
 
 function drop(e) {
-  if (sortingMethodSelect.value !== 'custom') return;
-  e.preventDefault();
-  const dropTarget = e.target.closest('li');
-  if (dropTarget && draggedItem) {
-    const rect = dropTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    if (y < rect.height / 2) {
-      dropTarget.parentNode.insertBefore(draggedItem, dropTarget);
-    } else {
-      dropTarget.parentNode.insertBefore(draggedItem, dropTarget.nextSibling);
-    }
-    // Update imageFiles array to match new order
-    const newImageFiles = Array.from(fileListContainer.children).map(li => 
-      imageFiles.find(file => file.path === li.dataset.path)
-    );
-    imageFiles = newImageFiles;
-    updateAtlas();
-  }
-  // Reset styles
-  Array.from(fileListContainer.children).forEach(item => {
-    item.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
-  });
-  draggedItem = null;
+	if (sorting_method_select.value !== "custom") return;
+	e.preventDefault();
+	const drop_target = e.target.closest("li");
+	if (drop_target && dragged_item) {
+		const rect = drop_target.getBoundingClientRect();
+		const y = e.clientY - rect.top;
+		if (y < rect.height / 2) {
+			drop_target.parentNode.insertBefore(dragged_item, drop_target);
+		} else {
+			drop_target.parentNode.insertBefore(dragged_item, drop_target.nextSibling);
+		}
+		// Update image_files array to match new order
+		const new_image_files = Array.from(file_list_container.children).map(li =>
+			image_files.find(file => file.path === li.dataset.path)
+		);
+		image_files = new_image_files;
+		update_atlas();
+	}
+	// Reset styles
+	Array.from(file_list_container.children).forEach(item => {
+		item.classList.remove("dragging", "drag-over-top", "drag-over-bottom");
+	});
+	dragged_item = null;
 }
 
 // Update the CSS for the drag and drop effect
-const style = document.createElement('style');
+const style = document.createElement("style");
 style.textContent = `
   #fileListContainer li.drag-over-top::before,
   #fileListContainer li.drag-over-bottom::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     right: 0;
@@ -344,310 +345,276 @@ style.textContent = `
 document.head.appendChild(style);
 
 // Function to update the atlas
-async function updateAtlas() {
-  console.log('Atlas Image files:', imageFiles);
+async function update_atlas() {
+	if (image_files.length === 0) return;
 
-  if (imageFiles.length === 0) return;
-  
-  try {
-    currentAtlasSize = parseInt(atlasSizeSelect.value);
-    const padding = parseInt(paddingSelect.value);
-    const sortingMethod = sortingMethodSelect.value;
-    
-    const result = await window.electronAPI.packTexture({
-      imagePaths: imageFiles.map(file => file.path),
-      atlasSize: currentAtlasSize,
-      padding,
-      sortingMethod
-    });
-    
-    console.log('Texture packed result:', result);
-    
-    if (!result || !result.packedRects || result.packedRects.length === 0) {
-      throw new Error('No images were packed into the atlas');
-    }
-    
-    // Create a map of path to packed rect for quick lookup
-    const rectMap = new Map(result.packedRects.map(rect => [rect.data.path, rect]));
-    
-    // Create packedRects array in the exact order of imageFiles
-    packedRects = imageFiles.map(file => {
-      const rect = rectMap.get(file.path);
-      if (!rect) {
-        console.warn(`No packed rectangle found for file: ${file.path}`);
-        return null;
-      }
-      return rect;
-    }).filter(Boolean);
+	try {
+		current_atlas_size = parseInt(atlas_size_select.value);
+		const padding = parseInt(padding_select.value);
+		const sorting_method = sorting_method_select.value;
 
-    // Ensure the rendering uses the packedRects order
-    packedAtlasDataUrl = await renderAtlas(packedRects, currentAtlasSize);
-    console.log('Atlas rendered');
-    updatePreview(packedAtlasDataUrl);
-    
-    // Enable the save button after successful atlas generation
-    saveAtlasBtn.disabled = false;
-  } catch (error) {
-    console.error('Error updating atlas:', error);
-    alert('Error updating atlas: ' + error.message);
-    
-    // Disable the save button if there's an error
-    saveAtlasBtn.disabled = true;
-  }
+		const result = await window.electronAPI.pack_texture({
+			image_paths: image_files.map(file => file.path),
+			atlas_size: current_atlas_size,
+			padding,
+			sorting_method
+		});
+
+		if (!result || !result.packed_rects || result.packed_rects.length === 0) {
+			throw new Error("No images were packed into the atlas");
+		}
+
+		// Create a map of path to packed rect for quick lookup
+		const rect_map = new Map(result.packed_rects.map(rect => [rect.data.path, rect]));
+
+		// Create packed_rects array in the exact order of image_files
+		packed_rects = image_files.map(file => {
+			const rect = rect_map.get(file.path);
+			if (!rect) {
+				return null;
+			}
+			return rect;
+		}).filter(Boolean);
+
+		// Ensure the rendering uses the packed_rects order
+		packed_atlas_data_url = await render_atlas(packed_rects, current_atlas_size);
+		update_preview(packed_atlas_data_url);
+
+		// Enable the save button after successful atlas generation
+		save_atlas_btn.disabled = false;
+	} catch (error) {
+		alert("Error updating atlas: " + error.message);
+
+		// Disable the save button if there's an error
+		save_atlas_btn.disabled = true;
+	}
 }
 
-// Helper functions (renderAtlas, updatePreview, formatFileSize, etc.) remain the same
+// Helper functions (render_atlas, update_preview, format_file_size, etc.) remain the same
 
 // Initialize the application
 async function init() {
-  const isDark = await window.electronAPI.getTheme();
-  applyTheme(isDark);
-  updatePreview('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==');
-  
-  // Update sorting method options
-  const sortingMethods = [
-    { value: 'name-asc', label: 'Name (A-Z)' },
-    { value: 'name-desc', label: 'Name (Z-A)' },
-    { value: 'fileSize-asc', label: 'File Size (Small - Large)' },
-    { value: 'fileSize-desc', label: 'File Size (Large - Small)' },
-    { value: 'updated-desc', label: 'Date Modified (Newest - Oldest)' },
-    { value: 'updated-asc', label: 'Date Modified (Oldest - Newest)' },
-    { value: 'custom', label: 'Custom (Drag & Drop)' }
-  ];
-  
-  sortingMethodSelect.innerHTML = '';
-  sortingMethods.forEach(method => {
-    const option = document.createElement('option');
-    option.value = method.value;
-    option.textContent = method.label;
-    sortingMethodSelect.appendChild(option);
-  });
-}
+	const is_dark = await window.electronAPI.get_theme();
+	apply_theme(is_dark);
+	update_preview("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==");
 
+	// Set initial cursor style
+	canvas_container.style.cursor = "grab";
+
+	// Update sorting method options
+	const sorting_methods = [
+		{ value: "name-asc", label: "Name (A-Z)" },
+		{ value: "name-desc", label: "Name (Z-A)" },
+		{ value: "fileSize-asc", label: "File Size (Small - Large)" },
+		{ value: "fileSize-desc", label: "File Size (Large - Small)" },
+		{ value: "updated-desc", label: "Date Modified (Newest - Oldest)" },
+		{ value: "updated-asc", label: "Date Modified (Oldest - Newest)" },
+		{ value: "custom", label: "Custom (Drag & Drop)" }
+	];
+
+	sorting_method_select.innerHTML = "";
+	sorting_methods.forEach(method => {
+		const option = document.createElement("option");
+		option.value = method.value;
+		option.textContent = method.label;
+		sorting_method_select.appendChild(option);
+	});
+}
 init();
 
-async function renderAtlas(packedRects, atlasSize) {
-  console.log('Rendering atlas with:', { packedRects, atlasSize });
-  const canvas = new OffscreenCanvas(atlasSize, atlasSize);
-  const ctx = canvas.getContext('2d');
+async function render_atlas(packed_rects, atlas_size) {
+	const canvas = new OffscreenCanvas(atlas_size, atlas_size);
+	const ctx = canvas.getContext("2d");
 
-  ctx.clearRect(0, 0, atlasSize, atlasSize);
+	ctx.clearRect(0, 0, atlas_size, atlas_size);
 
-  for (const rect of packedRects) {
-    console.log('Processing rect:', rect);
-    if (!rect || !rect.data || !rect.data.buffer) {
-      console.error('Invalid rect or missing buffer:', rect);
-      continue;
-    }
-    try {
-      const img = await createImageBitmap(new Blob([rect.data.buffer]));
-      ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
-    } catch (error) {
-      console.error('Error rendering image in atlas:', error);
-    }
-  }
+	for (const rect of packed_rects) {
+		if (!rect || !rect.data || !rect.data.buffer) {
+			continue;
+		}
+		try {
+			const img = await createImageBitmap(new Blob([rect.data.buffer]));
+			ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+		} catch (error) {
 
-  return canvas.convertToBlob({ type: 'image/png' }).then(blob => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  });
+		}
+	}
+
+	return canvas.convertToBlob({ type: "image/png" }).then(blob => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result);
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
+	});
 }
 
-const BASE_SIZE = 1024;
-let atlasZoom = 1;
-let isDragging = false;
-let lastX, lastY;
-let canvasOffsetX = 0;
-let canvasOffsetY = 0;
+function update_preview(data_url) {
+	const img = new Image();
+	img.onload = () => {
+		const max_size = Math.max(current_atlas_size, 1024);
+		const scaled_size = Math.ceil(max_size);
 
-function updatePreview(dataUrl) {
-  const img = new Image();
-  img.onload = () => {
-    const scaledSize = Math.ceil(BASE_SIZE * atlasZoom);
-    
-    previewCanvas.width = scaledSize;
-    previewCanvas.height = scaledSize;
-    
-    ctx.clearRect(0, 0, scaledSize, scaledSize);
-    
-    // Draw checkerboard background to show transparency
-    const tileSize = Math.max(1, Math.ceil(10 * atlasZoom));
-    for (let x = 0; x < scaledSize; x += tileSize) {
-      for (let y = 0; y < scaledSize; y += tileSize) {
-        ctx.fillStyle = (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0 ? '#FFF' : '#DDD';
-        ctx.fillRect(x, y, tileSize, tileSize);
-      }
+		preview_canvas.width = max_size;
+		preview_canvas.height = max_size;
+
+		ctx.clearRect(0, 0, max_size, max_size);
+
+		// Draw checkerboard background to show transparency
+		const tile_size = Math.max(1, Math.ceil(10));
+		for (let x = 0; x < max_size; x += tile_size) {
+			for (let y = 0; y < max_size; y += tile_size) {
+				ctx.fillStyle = (Math.floor(x / tile_size) + Math.floor(y / tile_size)) % 2 === 0 ? "#FFF" : "#DDD";
+				ctx.fillRect(x, y, tile_size, tile_size);
+			}
+		}
+
+		// Draw the atlas image
+		ctx.imageSmoothingEnabled = false; // Disable image smoothing for pixel-perfect rendering
+		ctx.drawImage(img, 0, 0, max_size, max_size);
+
+		// Update canvas container size
+		update_canvas_container_size();
+
+		// Apply the current offset
+		apply_canvas_offset();
+	};
+	img.onerror = (error) => {
+
+	};
+	img.src = data_url;
+}
+
+function update_canvas_container_size() {
+	// canvas_container.style.width = `${current_atlas_size}px`;
+	// canvas_container.style.height = `${current_atlas_size}px`;
+	preview_canvas.style.width = `${current_atlas_size}px`;
+	preview_canvas.style.height = `${current_atlas_size}px`;
+}
+
+let scale_factor = 1; // Initial scale factor
+
+function apply_canvas_offset() {
+    preview_canvas.style.transform = `translate(${canvas_offset_x}px, ${canvas_offset_y}px) scale(${scale_factor})`;
+    preview_canvas.style.transformOrigin = "0 0"; // Set the origin to the top-left corner
+}
+
+// Add event listener for mouse wheel to support zoom in and out
+document.addEventListener("wheel", (event) => {
+    if (event.ctrlKey) {
+        event.preventDefault(); // Prevent the default zoom behavior
+
+        // Adjust the scale factor based on the scroll direction
+        if (event.deltaY < 0) {
+            scale_factor *= 1.1; // Zoom in
+        } else {
+            scale_factor /= 1.1; // Zoom out
+        }
+
+        // Apply the new scale factor
+        apply_canvas_offset();
     }
-    
-    // Draw the atlas image
-    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, scaledSize, scaledSize);
-
-    // Update canvas container size
-    updateCanvasContainerSize();
-    
-    // Apply the current offset
-    applyCanvasOffset();
-  };
-  img.onerror = (error) => {
-    
-  };
-  img.src = dataUrl;
-}
-
-function applyCanvasOffset() {
-  previewCanvas.style.transform = `translate(${canvasOffsetX}px, ${canvasOffsetY}px)`;
-}
-
-canvasContainer.addEventListener('mousedown', (event) => {
-  isDragging = true;
-  lastX = event.clientX;
-  lastY = event.clientY;
-  canvasContainer.style.cursor = 'grabbing';
 });
 
-document.addEventListener('mousemove', (event) => {
-  if (isDragging) {
-    const deltaX = event.clientX - lastX;
-    const deltaY = event.clientY - lastY;
-    canvasOffsetX += deltaX;
-    canvasOffsetY += deltaY;
-    applyCanvasOffset();
-    lastX = event.clientX;
-    lastY = event.clientY;
-  }
+function format_file_size(bytes) {
+	if (bytes < 1024) return bytes + " B";
+	else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+	else return (bytes / 1048576).toFixed(1) + " MB";
+}
+
+function apply_theme(is_dark) {
+	document.body.classList.toggle("dark-mode", is_dark);
+}
+
+// Make sure to call update_atlas when the page loads if there are images
+if (image_files.length > 0) {
+	update_atlas();
+}
+
+save_atlas_btn.addEventListener("click", async () => {
+	if (packed_atlas_data_url) {
+		try {
+			const default_path = "sprite_atlas.png";
+			const saved_path = await window.electronAPI.save_atlas({ data_url: packed_atlas_data_url, default_path });
+			if (saved_path) {
+
+			}
+		} catch (error) {
+			alert("Error saving atlas: " + error.message);
+		}
+	} else {
+		alert("No atlas to save. Please generate an atlas first.");
+	}
 });
 
-document.addEventListener('mouseup', () => {
-  isDragging = false;
-  canvasContainer.style.cursor = 'grab';
+async function save_project() {
+	const project_data = {
+		selected_folder,
+		image_files,
+		atlas_size: atlas_size_select.value,
+		padding: padding_select.value,
+		sorting_method: sorting_method_select.value,
+	};
+
+	try {
+		const saved_path = await window.electronAPI.save_project(project_data);
+	} catch (error) {
+		alert("Error saving project: " + error.message);
+	}
+}
+
+async function load_project() {
+	try {
+		const project_data = await window.electronAPI.load_project();
+		if (project_data) {
+			selected_folder = project_data.selected_folder;
+			image_files = project_data.image_files;
+			atlas_size_select.value = project_data.atlas_size;
+			padding_select.value = project_data.padding;
+			sorting_method_select.value = project_data.sorting_method;
+
+			await update_file_list();
+			update_atlas();
+		}
+	} catch (error) {
+		alert("Error loading project: " + error.message);
+	}
+}
+
+save_project_btn.addEventListener("click", save_project);
+load_project_btn.addEventListener("click", load_project);
+
+github_btn.addEventListener("click", () => {
+	window.electronAPI.open_external("https://github.com/CommanderFoo/sprite-packer");
+});
+
+// Add these event listeners for panning
+canvas_container.addEventListener("mousedown", (event) => {
+	is_dragging = true;
+	last_x = event.clientX;
+	last_y = event.clientY;
+	canvas_container.style.cursor = "grabbing";
+});
+
+document.addEventListener("mousemove", (event) => {
+	if (is_dragging) {
+		const delta_x = event.clientX - last_x;
+		const delta_y = event.clientY - last_y;
+		canvas_offset_x += delta_x;
+		canvas_offset_y += delta_y;
+		apply_canvas_offset();
+		last_x = event.clientX;
+		last_y = event.clientY;
+	}
+});
+
+document.addEventListener("mouseup", () => {
+	is_dragging = false;
+	canvas_container.style.cursor = "grab";
 });
 
 // Prevent default drag behavior on the canvas
-previewCanvas.addEventListener('dragstart', (event) => {
-  event.preventDefault();
-});
-
-// Initialize zoom
-window.electronAPI.getAtlasZoom().then(zoom => {
-  atlasZoom = zoom;
-  updateAtlasZoom(atlasZoom);
-});
-
-function formatFileSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-  else return (bytes / 1048576).toFixed(1) + ' MB';
-}
-
-function applyTheme(isDark) {
-  document.body.classList.toggle('dark-mode', isDark);
-}
-
-// Make sure to call updateAtlas when the page loads if there are images
-if (imageFiles.length > 0) {
-  updateAtlas();
-}
-
-// Add this near the other event listeners
-canvasContainer.addEventListener('wheel', (event) => {
-  if (event.ctrlKey) {
-    event.preventDefault();
-    const delta = event.deltaY > 0 ? -0.1 : 0.1;
-    const rect = canvasContainer.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
-    updateAtlasZoom(atlasZoom + delta, { x, y });
-  }
-});
-
-async function updateAtlasZoom(newZoom, zoomCenter = { x: 0.5, y: 0.5 }) {
-  const oldZoom = atlasZoom;
-  atlasZoom = Math.max(0.1, Math.min(5, newZoom));
-  await window.electronAPI.setAtlasZoom(atlasZoom);
-
-  if (packedAtlasDataUrl) {
-    updatePreview(packedAtlasDataUrl);
-  }
-
-  // Adjust offset to keep the zoom center in place
-  const scaleFactor = atlasZoom / oldZoom;
-  const containerRect = canvasContainer.getBoundingClientRect();
-  const centerX = containerRect.width * zoomCenter.x;
-  const centerY = containerRect.height * zoomCenter.y;
-  canvasOffsetX = (canvasOffsetX - centerX) * scaleFactor + centerX;
-  canvasOffsetY = (canvasOffsetY - centerY) * scaleFactor + centerY;
-  applyCanvasOffset();
-}
-
-function updateCanvasContainerSize() {
-  const scaledSize = Math.ceil(currentAtlasSize * atlasZoom);
-  canvasContainer.style.width = `${currentAtlasSize}px`;
-  canvasContainer.style.height = `${currentAtlasSize}px`;
-  previewCanvas.style.width = `${scaledSize}px`;
-  previewCanvas.style.height = `${scaledSize}px`;
-}
-
-// Add this near the other event listeners
-saveAtlasBtn.addEventListener('click', async () => {
-  if (packedAtlasDataUrl) {
-    try {
-      const defaultPath = 'texture_atlas.png';
-      const savedPath = await window.electronAPI.saveAtlas({ dataUrl: packedAtlasDataUrl, defaultPath });
-      if (savedPath) {
-        
-      }
-    } catch (error) {
-      alert('Error saving atlas: ' + error.message);
-    }
-  } else {
-    alert('No atlas to save. Please generate an atlas first.');
-  }
-});
-
-async function saveProject() {
-  const projectData = {
-    selectedFolder,
-    imageFiles,
-    atlasSize: atlasSizeSelect.value,
-    padding: paddingSelect.value,
-    sortingMethod: sortingMethodSelect.value,
-    atlasZoom,
-  };
-
-  try {
-    const savedPath = await window.electronAPI.saveProject(projectData);
-  } catch (error) {
-    alert('Error saving project: ' + error.message);
-  }
-}
-
-async function loadProject() {
-  try {
-    const projectData = await window.electronAPI.loadProject();
-    if (projectData) {
-      selectedFolder = projectData.selectedFolder;
-      imageFiles = projectData.imageFiles;
-      atlasSizeSelect.value = projectData.atlasSize;
-      paddingSelect.value = projectData.padding;
-      sortingMethodSelect.value = projectData.sortingMethod;
-      atlasZoom = projectData.atlasZoom;
-
-      await updateFileList();
-      updateAtlas();
-      updateAtlasZoom(atlasZoom);
-    }
-  } catch (error) {
-    alert('Error loading project: ' + error.message);
-  }
-}
-
-saveProjectBtn.addEventListener('click', saveProject);
-loadProjectBtn.addEventListener('click', loadProject);
-
-githubBtn.addEventListener('click', () => {
-    window.electronAPI.openExternal('https://github.com/CommanderFoo/sprite-packer');
+preview_canvas.addEventListener("dragstart", (event) => {
+	event.preventDefault();
 });
