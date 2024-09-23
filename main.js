@@ -2,7 +2,6 @@
 const path = require("path");
 const fs = require("fs").promises;
 const sharp = require("sharp");
-const { autoUpdater } = require("electron-updater");
 
 let store;
 let main_window;
@@ -36,8 +35,6 @@ function create_window() {
 	// Set the theme based on the stored value or system preference
 	const is_dark_mode = store.get("dark_mode", nativeTheme.shouldUseDarkColors);
 	nativeTheme.themeSource = is_dark_mode ? "dark" : "light";
-
-	autoUpdater.checkForUpdatesAndNotify();
 }
 
 // Set the app name
@@ -242,26 +239,4 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
 	if (BrowserWindow.getAllWindows().length === 0) create_window();
-});
-
-autoUpdater.on("update-available", () => {
-    dialog.showMessageBox({
-        type: "info",
-        title: "Update Available",
-        message: "A new version of Sprite Packer is available. It will be downloaded in the background.",
-        buttons: ["OK"]
-    });
-});
-
-autoUpdater.on("update-downloaded", () => {
-    dialog.showMessageBox({
-        type: "info",
-        title: "Update Ready",
-        message: "A new version of Sprite Packer is ready. Restart the application to apply the update.",
-        buttons: ["Restart", "Later"]
-    }).then(result => {
-        if (result.response === 0) {
-            autoUpdater.quitAndInstall();
-        }
-    });
 });
