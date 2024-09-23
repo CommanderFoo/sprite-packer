@@ -20,6 +20,7 @@ let zoomLevel = 1;
 const zoomStep = 0.1;
 let isCustomSorting = false;
 let packedRects = [];
+let currentAtlasSize = 1024; // Added variable to store the current atlas size
 
 // Event listener for selecting a folder
 selectFolderBtn.addEventListener('click', async () => {
@@ -27,12 +28,10 @@ selectFolderBtn.addEventListener('click', async () => {
     selectedFolder = await window.electronAPI.selectFolder();
     if (selectedFolder) {
       imageFiles = await window.electronAPI.loadImages(selectedFolder);
-      console.log('Loaded images:', imageFiles);
-      await updateFileList();
+      await updateFileList(); // This will sort the imageFiles
       updateAtlas();
     }
   } catch (error) {
-    console.error('Error selecting folder:', error);
     alert('Error selecting folder: ' + error.message);
   }
 });
@@ -60,6 +59,18 @@ async function updateFileList() {
   if (sortingMethod !== 'custom') {
     const [method, order] = sortingMethod.split('-');
     
+    // Custom string comparison function
+    const compareStrings = (a, b) => {
+      const aChars = [...a];
+      const bChars = [...b];
+      for (let i = 0; i < Math.min(aChars.length, bChars.length); i++) {
+        if (aChars[i] !== bChars[i]) {
+          return aChars[i].localeCompare(bChars[i]);
+        }
+      }
+      return aChars.length - bChars.length;
+    };
+
     // Sort imageFiles based on the selected method
     imageFiles.sort((a, b) => {
       let comparison;
@@ -68,13 +79,17 @@ async function updateFileList() {
           comparison = a.stats.size - b.stats.size;
           break;
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          comparison = compareStrings(a.name, b.name);
           break;
         case 'updated':
           comparison = a.stats.mtime.getTime() - b.stats.mtime.getTime();
           break;
         default:
           return 0;
+      }
+      // If the primary comparison results in a tie, use the name as a secondary sort
+      if (comparison === 0 && method !== 'name') {
+        comparison = compareStrings(a.name, b.name);
       }
       return order === 'asc' ? comparison : -comparison;
     });
@@ -130,8 +145,10 @@ async function updateFileList() {
     li.addEventListener('drop', drop);
 
     // Add click event listener for highlighting
-    li.addEventListener('click', () => toggleHighlight(file.path));
+    //li.addEventListener('click', () => toggleHighlight(file.path));
   }
+
+  console.log('Image files:', imageFiles);
 }
 
 function removeFile(path) {
@@ -155,7 +172,7 @@ function updatePreviewHighlight() {
 
   const img = new Image();
   img.onload = () => {
-    const scaledSize = Math.ceil(BASE_SIZE * atlasZoom);
+    const scaledSize = Math.ceil(currentAtlasSize * atlasZoom);
     
     previewCanvas.width = scaledSize;
     previewCanvas.height = scaledSize;
@@ -181,7 +198,7 @@ function updatePreviewHighlight() {
         let theAtlasSize = parseInt(atlasSizeSelect.value);
 
         const { x, y, width, height } = highlightedRect;
-        let scaleFactor = scaledSize / BASE_SIZE;
+        let scaleFactor = scaledSize / currentAtlasSize;
 
         if(theAtlasSize == 256){
           scaleFactor *= 4
@@ -328,17 +345,18 @@ document.head.appendChild(style);
 
 // Function to update the atlas
 async function updateAtlas() {
+  console.log('Atlas Image files:', imageFiles);
+
   if (imageFiles.length === 0) return;
   
   try {
-    const atlasSize = parseInt(atlasSizeSelect.value);
+    currentAtlasSize = parseInt(atlasSizeSelect.value);
     const padding = parseInt(paddingSelect.value);
     const sortingMethod = sortingMethodSelect.value;
     
-    console.log('Updating atlas with options:', { atlasSize, padding, sortingMethod, imageFiles });
     const result = await window.electronAPI.packTexture({
       imagePaths: imageFiles.map(file => file.path),
-      atlasSize,
+      atlasSize: currentAtlasSize,
       padding,
       sortingMethod
     });
@@ -349,8 +367,21 @@ async function updateAtlas() {
       throw new Error('No images were packed into the atlas');
     }
     
-    packedRects = result.packedRects; // Store the packed rectangles
-    packedAtlasDataUrl = await renderAtlas(result.packedRects, result.images, atlasSize);
+    // Create a map of path to packed rect for quick lookup
+    const rectMap = new Map(result.packedRects.map(rect => [rect.data.path, rect]));
+    
+    // Create packedRects array in the exact order of imageFiles
+    packedRects = imageFiles.map(file => {
+      const rect = rectMap.get(file.path);
+      if (!rect) {
+        console.warn(`No packed rectangle found for file: ${file.path}`);
+        return null;
+      }
+      return rect;
+    }).filter(Boolean);
+
+    // Ensure the rendering uses the packedRects order
+    packedAtlasDataUrl = await renderAtlas(packedRects, currentAtlasSize);
     console.log('Atlas rendered');
     updatePreview(packedAtlasDataUrl);
     
@@ -395,8 +426,8 @@ async function init() {
 
 init();
 
-async function renderAtlas(packedRects, images, atlasSize) {
-  console.log('Rendering atlas with:', { packedRects, images, atlasSize });
+async function renderAtlas(packedRects, atlasSize) {
+  console.log('Rendering atlas with:', { packedRects, atlasSize });
   const canvas = new OffscreenCanvas(atlasSize, atlasSize);
   const ctx = canvas.getContext('2d');
 
@@ -462,7 +493,7 @@ function updatePreview(dataUrl) {
     applyCanvasOffset();
   };
   img.onerror = (error) => {
-    console.error('Error loading preview image:', error);
+    
   };
   img.src = dataUrl;
 }
@@ -553,9 +584,9 @@ async function updateAtlasZoom(newZoom, zoomCenter = { x: 0.5, y: 0.5 }) {
 }
 
 function updateCanvasContainerSize() {
-  const scaledSize = Math.ceil(BASE_SIZE * atlasZoom);
-  canvasContainer.style.width = `${BASE_SIZE}px`;
-  canvasContainer.style.height = `${BASE_SIZE}px`;
+  const scaledSize = Math.ceil(currentAtlasSize * atlasZoom);
+  canvasContainer.style.width = `${currentAtlasSize}px`;
+  canvasContainer.style.height = `${currentAtlasSize}px`;
   previewCanvas.style.width = `${scaledSize}px`;
   previewCanvas.style.height = `${scaledSize}px`;
 }
@@ -567,10 +598,9 @@ saveAtlasBtn.addEventListener('click', async () => {
       const defaultPath = 'texture_atlas.png';
       const savedPath = await window.electronAPI.saveAtlas({ dataUrl: packedAtlasDataUrl, defaultPath });
       if (savedPath) {
-        console.log(`Atlas saved successfully to: ${savedPath}`);
+        
       }
     } catch (error) {
-      console.error('Error saving atlas:', error);
       alert('Error saving atlas: ' + error.message);
     }
   } else {
@@ -590,11 +620,7 @@ async function saveProject() {
 
   try {
     const savedPath = await window.electronAPI.saveProject(projectData);
-    if (savedPath) {
-      console.log(`Project saved successfully to: ${savedPath}`);
-    }
   } catch (error) {
-    console.error('Error saving project:', error);
     alert('Error saving project: ' + error.message);
   }
 }
@@ -615,7 +641,6 @@ async function loadProject() {
       updateAtlasZoom(atlasZoom);
     }
   } catch (error) {
-    console.error('Error loading project:', error);
     alert('Error loading project: ' + error.message);
   }
 }
