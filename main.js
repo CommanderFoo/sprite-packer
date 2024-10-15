@@ -13,7 +13,7 @@ async function initialize_store() {
 
 function create_window() {
 	// Increase window size by 20%
-	const width = Math.round(1200 * 1.2);
+	const width = Math.round(1200 * 1.4);
 	const height = Math.round(800 * 1.2);
 
 	main_window = new BrowserWindow({
@@ -35,6 +35,8 @@ function create_window() {
 	// Set the theme based on the stored value or system preference
 	const is_dark_mode = store.get("dark_mode", nativeTheme.shouldUseDarkColors);
 	nativeTheme.themeSource = is_dark_mode ? "dark" : "light";
+
+	//main_window.webContents.openDevTools();
 }
 
 // Set the app name
@@ -63,6 +65,19 @@ app.whenReady().then(async () => {
 		return result.filePaths[0];
 	});
 
+	ipcMain.handle("add-files", async () => {
+		const result = await dialog.showOpenDialog({
+			properties: ['openFile', 'multiSelections'],
+			filters: [
+				{ name: 'Images', extensions: ['jpg', 'png', 'jpeg'] }
+			]
+		});
+
+		if (!result.canceled) {
+			return  result.filePaths;
+		}
+	});
+
 	ipcMain.handle("load-images", async (event, folder_path) => {
 		const files = await fs.readdir(folder_path);
 		const image_files = files.filter(file =>
@@ -81,6 +96,23 @@ app.whenReady().then(async () => {
 				}
 			};
 		}));
+		return images_with_stats;
+	});
+
+	ipcMain.handle("load-image", async (event, files) => {
+		const images_with_stats = await Promise.all(files.map(async file => {
+			const stats = await fs.stat(file);
+			return {
+				path: file,
+				name: path.parse(file).name,
+				stats: {
+					size: stats.size,
+					birthtime: stats.birthtime,
+					mtime: stats.mtime
+				}
+			};
+		}));
+
 		return images_with_stats;
 	});
 

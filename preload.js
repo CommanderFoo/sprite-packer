@@ -2,7 +2,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
 	select_folder: () => ipcRenderer.invoke("select-folder"),
+	add_files: () => ipcRenderer.invoke("add-files"),
 	load_images: (folderPath) => ipcRenderer.invoke("load-images", folderPath),
+	load_image: (filePath) => ipcRenderer.invoke("load-image", filePath),
 	pack_texture: (options) => ipcRenderer.invoke("pack-texture", options),
 	save_atlas: (options) => ipcRenderer.invoke("save-atlas", options),
 	read_file: (filePath) => ipcRenderer.invoke("read-file", filePath),

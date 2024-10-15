@@ -1,4 +1,5 @@
 const select_folder_btn = document.getElementById("selectFolderBtn");
+const add_files_btn = document.getElementById("addFilesBtn");
 const atlas_size_select = document.getElementById("atlasSizeSelect");
 const padding_select = document.getElementById("paddingSelect");
 const sorting_method_select = document.getElementById("sortingMethodSelect");
@@ -15,6 +16,7 @@ const load_project_btn = document.getElementById("loadProjectBtn");
 const github_btn = document.getElementById("githubBtn");
 
 let selected_folder = null;
+let added_files = null;
 let image_files = [];
 let packed_atlas_data_url = null;
 let is_custom_sorting = false;
@@ -61,12 +63,26 @@ select_folder_btn.addEventListener("click", async () => {
 	try {
 		selected_folder = await window.electronAPI.select_folder();
 		if (selected_folder) {
-			image_files = await window.electronAPI.load_images(selected_folder);
+			image_files = await window.electronAPI.load_images(selected_folder, false);
 			await update_file_list(); // This will sort the image_files
 			update_atlas();
 		}
 	} catch (error) {
 		alert("Error selecting folder: " + error.message);
+	}
+});
+
+add_files_btn.addEventListener("click", async () => {
+	try {
+		added_files = await window.electronAPI.add_files();
+		if (added_files) {
+			const new_files = await window.electronAPI.load_image(added_files, true);
+			image_files.push(...new_files);
+			await update_file_list();
+			update_atlas();
+		}
+	} catch (error) {
+		alert("Error adding files: " + error.message);
 	}
 });
 
@@ -603,7 +619,6 @@ async function load_project() {
 	try {
 		const project_data = await window.electronAPI.load_project();
 		if (project_data) {
-			selected_folder = project_data.selected_folder;
 			image_files = project_data.image_files;
 			atlas_size_select.value = project_data.atlas_size;
 			padding_select.value = project_data.padding;
