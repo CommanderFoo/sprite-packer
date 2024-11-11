@@ -19,4 +19,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	save_project: (projectData) => ipcRenderer.invoke("save-project", projectData),
 	load_project: () => ipcRenderer.invoke("load-project"),
 	open_external: (url) => ipcRenderer.invoke("open-external", url),
+	select_format: () => ipcRenderer.invoke("select-format"),
 });

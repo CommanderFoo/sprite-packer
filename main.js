@@ -5,6 +5,7 @@ const sharp = require("sharp");
 
 let store;
 let main_window;
+let format = "png";
 
 async function initialize_store() {
 	const { default: Store } = await import("electron-store");
@@ -164,16 +165,24 @@ app.whenReady().then(async () => {
 		}
 	});
 
-	ipcMain.handle("save-atlas", async (event, { data_url, default_path, quality }) => {
+	ipcMain.handle("save-atlas", async (event, { data_url, default_path, quality, format }) => {
+		if (!format) {
+			format = "png"; // Default to PNG if format is not provided
+		}
 		const result = await dialog.showSaveDialog({
 			default_path,
-			filters: [{ name: "PNG", extensions: ["png"] }]
+			filters: [{ name: format.toUpperCase(), extensions: [format] }]
 		});
 		if (!result.canceled) {
-			const base64_data = data_url.replace(/^data:image\/png;base64,/, "");
+			const base64_data = data_url.replace(/^data:image\/(png|jpeg);base64,/, "");
 			const buffer = Buffer.from(base64_data, "base64");
-			const png_buffer = await sharp(buffer).png({ quality: Math.round(parseFloat(quality) * 100) }).toBuffer();
-			await fs.writeFile(result.filePath, png_buffer, "base64");
+			let image_buffer;
+			if (format === "jpg") {
+				image_buffer = await sharp(buffer).jpeg({ quality: Math.round(parseFloat(quality) * 100) }).toBuffer();
+			} else {
+				image_buffer = await sharp(buffer).png({ quality: Math.round(parseFloat(quality) * 100) }).toBuffer();
+			}
+			await fs.writeFile(result.filePath, image_buffer, "base64");
 			return result.filePath;
 		}
 	});
@@ -226,7 +235,6 @@ app.whenReady().then(async () => {
 		return store.get("atlas_zoom_factor", 0.6); // Change default to 0.6 (60%)
 	});
 
-	// Add these new IPC handlers
 	ipcMain.handle("save-project", async (event, project_data) => {
 		const result = await dialog.showSaveDialog({
 			title: "Save Project",

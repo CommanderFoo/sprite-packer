@@ -9,6 +9,7 @@ const preview_canvas = document.getElementById("previewCanvas");
 const ctx = preview_canvas.getContext("2d");
 const quality_select = document.getElementById("qualitySelect");
 const canvas_container = document.getElementById("canvasContainer");
+const atlas_format_select = document.getElementById("atlasFormat");
 
 const save_atlas_btn = document.getElementById("saveAtlasBtn");
 const save_project_btn = document.getElementById("saveProjectBtn");
@@ -585,8 +586,13 @@ if (image_files.length > 0) {
 save_atlas_btn.addEventListener("click", async () => {
 	if (packed_atlas_data_url) {
 		try {
-			const default_path = "sprite_atlas.png";
-			const saved_path = await window.electronAPI.save_atlas({ data_url: packed_atlas_data_url, default_path, quality: quality_select.value });
+			const default_path = `sprite_atlas.${atlas_format_select.value}`;
+			const saved_path = await window.electronAPI.save_atlas({
+				data_url: packed_atlas_data_url,
+				default_path,
+				quality: quality_select.value,
+				format: atlas_format_select.value
+			});
 			if (saved_path) {
 
 			}
