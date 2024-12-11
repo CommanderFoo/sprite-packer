@@ -30,21 +30,23 @@ let canvas_offset_x = 0;
 let canvas_offset_y = 0;
 
 const atlas_sizes = [
+	{ width: 16, height: 16 },
 	{ width: 32, height: 32 },
 	{ width: 64, height: 64 },
 	{ width: 128, height: 64 },
 	{ width: 128, height: 128 },
 	{ width: 256, height: 128 },
     { width: 256, height: 256 },
-    { width: 512, height: 512 },
 	{ width: 512, height: 256 },
+    { width: 512, height: 512 },
+	{ width: 1024, height: 512 },
     { width: 1024, height: 1024 },
 	{ width: 2048, height: 1024 },
     { width: 2048, height: 2048 },
 	{ width: 4096, height: 2048 },
     { width: 4096, height: 4096 },
-    { width: 8192, height: 8192 },
-	{ width: 8192, height: 4096 }
+	{ width: 8192, height: 4096 },
+    { width: 8192, height: 8192 }
 ];
 
 atlas_size_select.innerHTML = ""; // Clear existing options

@@ -37,7 +37,7 @@ function create_window() {
 	const is_dark_mode = store.get("dark_mode", nativeTheme.shouldUseDarkColors);
 	nativeTheme.themeSource = is_dark_mode ? "dark" : "light";
 
-	//main_window.webContents.openDevTools();
+	main_window.webContents.openDevTools();
 }
 
 // Set the app name
